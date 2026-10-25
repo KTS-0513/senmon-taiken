@@ -257,14 +257,32 @@ body.cine .panel, body.cine #prompt { opacity:0; pointer-events:none; }
 .floors .floor:nth-child(2) { margin:0 18px; }
 .towerBase { height:10px; margin:0 auto; max-width:440px; border-top:3px solid #c98a2b; }
 .yarn { display:flex; justify-content:center; margin:8px 0 4px; }
-.yarn svg { width:min(340px,80vw); height:auto; background:#fff; border:1.5px dashed rgba(46,58,89,.4); border-radius:6px; }
+.yarn svg { width:min(440px,86vw); height:auto; background:#fff; border:1.5px dashed rgba(46,58,89,.4); border-radius:6px; }
+.yarn figcaption { font-size:12px; color:#5a6582; text-align:center; }
 .ysteps { display:flex; justify-content:center; flex-wrap:wrap; gap:4px 8px; font-size:13px; color:#9a9280; }
 .ysteps .on { color:var(--akane); font-weight:700; }
 .ysteps .did { color:var(--ai); }
-.cloths { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:6px 0 10px; }
-.cloth { background:#fff; border:1.5px dashed rgba(46,58,89,.45); border-radius:6px; padding:6px; text-align:center; font-size:12px; line-height:1.5; }
+.cloths { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:6px 0 10px; }
+@media (max-width:640px) { .cloths { grid-template-columns:minmax(0,1fr); } }
+.cloth { position:relative; background:#fff; border:1.5px dashed rgba(46,58,89,.45); border-radius:6px; padding:8px; text-align:center; font-size:13px; line-height:1.5; }
 .cloth b { display:block; font-size:15px; margin:4px 0 2px; }
-.cloth svg { display:block; width:100%; height:64px; border-radius:4px; background:#fdfaf3; }
+/* 布の つくりの 絵（教科書 p.186 図2 の 組織図と 同じ 考え方）。引っぱると のび方が、切り口では ほつれ方が 見える */
+.cloth .lupe { position:absolute; right:8px; top:9px; display:flex; align-items:center; gap:2px; font-size:12px; color:#5a6582; }
+.cloth .lupe .material-symbols-outlined { font-size:17px; }
+.sws { display:flex; gap:8px; justify-content:center; align-items:flex-end; margin:8px 0 4px; }
+.sws figure { margin:0; flex:1; min-width:0; }
+.sws figcaption { font-size:12px; color:#5a6582; margin-top:2px; }
+.csw { display:flex; justify-content:center; }
+.csw svg { display:block; width:100%; max-width:150px; height:auto; transition:transform .8s cubic-bezier(.3,.8,.3,1); transform-origin:center; }
+.csw.pull svg { transform:scaleX(var(--pull)); }
+.cloth .cd { font-size:12px; color:#5a6582; }
+.ctools { display:flex; gap:6px; justify-content:center; margin-top:8px; }
+.ctools button { display:inline-flex; align-items:center; gap:3px; font-size:13px; padding:6px 10px; }
+.ctools button.on { outline:2px solid var(--akane); outline-offset:-2px; background:#fbecc4; }
+.ctools .material-symbols-outlined { font-size:17px; }
+.cnote { min-height:1.6em; margin:5px 0 0; font-size:13px; color:var(--akane); }
+.cex { margin-top:4px; padding-top:4px; border-top:1px dashed rgba(46,58,89,.3); font-size:12px; }
+@media (prefers-reduced-motion:reduce) { .csw svg { transition:none; } }
 .real { background:#eef5e6; border-radius:6px; padding:8px 12px; outline:1.5px dashed rgba(95,158,60,.65); outline-offset:-3px; font-size:14px; }
 .real ul { margin:4px 0 0; padding-left:1.2em; }
 .real li { margin:2px 0; }
@@ -3771,7 +3789,7 @@ const C1_FLOORS = [
   { ic: 'grid_on', t: '2階　布の階', d: '糸を 布に する（布の つくり）' },
   { ic: 'join', t: '3階　合体の階', d: '2つの 繊維を まぜる（混用）' },
 ];
-const CLOTH = { ori: { n: '織物', d: 'たて糸と よこ糸を 直角に 交差させる' }, ami: { n: '編物', d: '糸を ループ状に して からませる' }, fu: { n: '不織布', d: '繊維を からませ、シート状に する' } };   // 教科書 p.186 図2
+const CLOTH = { ori: { n: '織物', d: 'たて糸と よこ糸を 直角に 交差させる', ex: 'ワイシャツ・ブラウス・ジーンズ・学生服 など' }, ami: { n: '編物', d: '糸を ループ状に して からませる', ex: 'Tシャツ・セーター・くつ下 など' }, fu: { n: '不織布', d: '繊維を からませ、シート状に する', ex: 'マスク・服の 芯地・フェルト など' } };   // 教科書 p.186 図2・p.212
 const C1_REQ = [
   { t: 'よく のびて、動きやすい 体操服の 布が ほしい', ans: 'ami', hint: '教室の 布を 引っぱってみよう。いちばん のびた 布は、どの つくり？' },
   { t: 'じょうぶで 型くずれしにくい、ワイシャツの 布が ほしい', ans: 'ori', hint: '引っぱっても あまり のびなかった 布は、どの つくり？' },
@@ -3780,22 +3798,79 @@ const C1_REQ = [
 const T1 = () => (S.story.t || (S.story.t = { f: 0, y: 0, r: {}, real: false, m: 0, e: null, rec: [] }));
 const myS = () => S.mine || ALL_SENMON[0];
 const rnd = (seed) => () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-// 繊維 → 糸 の 絵（st：0 ばらばら／1 引きそろえた／2 よりを かけはじめ／3 糸）
-function yarnSvg(st, hue) {
-  const r = rnd(7), c = hueCss(hue, 42), L = [];
-  if (st === 0) for (let i = 0; i < 40; i++) { const x = 20 + r() * 255, y = 12 + r() * 64, a = r() * Math.PI, l = 10 + r() * 12; L.push(`<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${(x + Math.cos(a) * l).toFixed(1)}" y2="${(y + Math.sin(a) * l).toFixed(1)}"/>`); }
-  else if (st === 1) for (let i = 0; i < 44; i++) { const x = 20 + r() * 245, y = 36 + r() * 18, l = 14 + r() * 16; L.push(`<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${(x + l).toFixed(1)}" y2="${(y + (r() - 0.5) * 2).toFixed(1)}"/>`); }
-  else { L.push(`<rect x="16" y="33" width="268" height="24" rx="12" fill="${hueCss(hue, 80)}" stroke="none"/>`); for (let x = 20; x < 282; x += st === 2 ? 13 : 6) L.push(`<line x1="${x}" y1="56" x2="${x + 10}" y2="34"/>`); }
-  return `<svg viewBox="0 0 300 90" role="img" aria-label="${['ばらばらの 繊維', '引きそろえた 繊維', 'よりを かけはじめた 繊維', '糸'][st]}"><g stroke="${c}" stroke-width="2.4" stroke-linecap="round" fill="none">${L.join('')}</g></svg>`;
+// 繊維 → 糸 の 絵（st：0 ばらばら／1 引きそろえた／2 よりを かけはじめ／3 糸）。hue2 が あれば 2色の 繊維を まぜた 糸（混用）
+let YARN_ID = 0;
+function yarnSvg(st, hue, hue2 = null) {
+  const r = rnd(7 + st), A = hueCss(hue, 44), L = hueCss(hue, 82), A2 = hue2 == null ? A : hueCss(hue2, 44), R = [], id = `yc${++YARN_ID}`;
+  const fib = (d, c) => `<path d="${d}" fill="none" stroke="${c}" stroke-width="2.8" stroke-linecap="round"/>`;
+  if (st === 0) {   // くるっと 曲がった 短い 繊維が、ばらばら
+    for (let i = 0; i < 34; i++) { const x = 18 + r() * 262, y = 14 + r() * 70, a = r() * Math.PI * 2, l = 18 + r() * 16;
+      const x2 = x + Math.cos(a) * l, y2 = y + Math.sin(a) * l, cx = (x + x2) / 2 + Math.cos(a + 1.6) * 7, cy = (y + y2) / 2 + Math.sin(a + 1.6) * 7;
+      R.push(fib(`M${x.toFixed(1)} ${y.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`, i % 4 || hue2 == null ? A : A2)); }
+  } else if (st === 1) {   // 同じ 向きに 引きそろえた 帯
+    for (let i = 0; i < 30; i++) { const x = 16 + r() * 228, y = 34 + r() * 30, l = 30 + r() * 24;
+      R.push(fib(`M${x.toFixed(1)} ${y.toFixed(1)}q${(l / 2).toFixed(1)} ${(r() * 4 - 2).toFixed(1)} ${l.toFixed(1)} 0`, i % 4 || hue2 == null ? A : A2)); }
+  } else {   // ねじれた 糸（2：ゆるく ねじれ はじめ・はしに 繊維／3：きつく ねじれた 1本の 糸）
+    const hh = st === 2 ? 28 : 20, y0 = 50 - hh / 2, x0 = st === 2 ? 46 : 18, x1 = 282, step = st === 2 ? 15 : 8;
+    R.push(`<clipPath id="${id}"><rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${hh}" rx="${hh / 2}"/></clipPath>`);
+    R.push(`<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${hh}" rx="${hh / 2}" fill="${L}"/>`);
+    const S = []; let k = 0;
+    for (let x = x0 - hh; x < x1 + hh; x += step) { const c = hue2 != null && k++ % 3 === 2 ? A2 : A; S.push(`<line x1="${x}" y1="${y0 + hh}" x2="${x + hh * 0.9}" y2="${y0}" stroke="${c}" stroke-width="${st === 2 ? 3 : 3.8}" stroke-linecap="round"/>`); }
+    R.push(`<g clip-path="url(#${id})">${S.join('')}<rect x="${x0}" y="${y0 + 2}" width="${x1 - x0}" height="3" rx="1.5" fill="#fff" opacity=".45"/></g>`);
+    R.push(`<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${hh}" rx="${hh / 2}" fill="none" stroke="rgba(46,58,89,.55)" stroke-width="1.2"/>`);
+    if (st === 2) {   // まだ ねじれていない はしの 繊維と、ねじる 向きの 矢印
+      for (let i = 0; i < 8; i++) { const y = y0 + 3 + i * (hh - 6) / 7; R.push(fib(`M${x0 + 6} ${y.toFixed(1)}q-14 ${(r() * 6 - 3).toFixed(1)} -${(22 + r() * 12).toFixed(1)} ${(r() * 8 - 4).toFixed(1)}`, A)); }
+      R.push(`<path d="M150 ${y0 - 8}a30 10 0 1 1 -2 0" fill="none" stroke="var(--akane)" stroke-width="2"/><path d="M146 ${y0 - 12}l4 4 -4 4" fill="none" stroke="var(--akane)" stroke-width="2" stroke-linecap="round"/>`);
+    }
+  }
+  return `<svg viewBox="${st === 3 ? '0 32 300 36' : '0 0 300 100'}" role="img" aria-label="${['ばらばらの 繊維', '引きそろえた 繊維', 'よりを かけはじめた 繊維', hue2 == null ? '糸' : '2つの 繊維を まぜた 糸'][st]}">${R.join('')}</svg>`;
 }
-// 布の つくりの 絵（織物＝たて糸と よこ糸の 交差／編物＝編み目の 輪／不織布＝からんだ 繊維）
-function clothSvg(k, hue) {
-  const a = hueCss(hue, 52), b = hueCss((hue + 4) % 12, 62), O = [];
-  if (k === 'ori') for (let y = 0; y < 6; y++) for (let x = 0; x < 10; x++) O.push(`<rect x="${x * 12 + 1}" y="${y * 12 + 1}" width="10" height="10" rx="2" fill="${(x + y) % 2 ? a : b}"/>`);
-  else if (k === 'ami') for (let y = 0; y < 6; y++) for (let x = 0; x < 10; x++) O.push(`<path d="M${x * 12 + 1} ${y * 12}q5 8 5 11M${x * 12 + 11} ${y * 12}q-5 8 -5 11" stroke="${a}" stroke-width="3" fill="none" stroke-linecap="round"/>`);
-  else { const r = rnd(11); for (let i = 0; i < 80; i++) { const x = r() * 120, y = r() * 72, t = r() * Math.PI, l = 8 + r() * 10; O.push(`<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${(x + Math.cos(t) * l).toFixed(1)}" y2="${(y + Math.sin(t) * l).toFixed(1)}" stroke="${i % 3 ? a : b}" stroke-width="2" stroke-linecap="round"/>`); } }
-  return `<svg viewBox="0 0 121 73" preserveAspectRatio="none" role="img" aria-label="${CLOTH[k].n}の つくり">${O.join('')}</svg>`;
+// 布の つくりの 絵（教科書 p.186 図2 の 組織図と 同じ 考え方）。上に 来る 糸を あとから 描いて、上と 下の 重なりを 見せる
+const TH_LN = 'rgba(46,58,89,.6)';
+function weaveSvg(hue, twill, cut) {
+  const A = hueCss(hue, 50), B = hueCss(hue, 84), W = 13, G = 4, P = W + G, N = 6, M = 5, w = N * P + G, h = M * P + G, R = [];
+  const wp = (i) => `<rect x="${G + i * P}" y="0" width="${W}" height="${h}" fill="${A}" stroke="${TH_LN}"/>`;
+  const wf = (j, x0, x1) => `<rect x="${x0}" y="${G + j * P}" width="${x1 - x0}" height="${W}" fill="${B}" stroke="${TH_LN}"/>`;
+  const warpOver = (i, j) => (twill ? (i + j) % 3 !== 0 : (i + j) % 2 === 0);   // 平織＝1本ずつ 交互／あや織＝2本 上・1本 下を ずらす（ななめの すじ）
+  for (let j = 0; j < M; j++) R.push(wf(j, 0, w));
+  for (let i = 0; i < N; i++) R.push(wp(i));
+  for (let j = 0; j < M; j++) for (let i = 0; i < N; i++) if (!warpOver(i, j)) R.push(wf(j, G + i * P - 1.5, G + i * P + W + 1.5));
+  if (cut) for (let j = 0; j < M; j++) { const y = G + j * P + W / 2; R.push(`<path d="M${w - 1} ${y}q5 -4 9 1t9 0" fill="none" stroke="${B}" stroke-width="4" stroke-linecap="round"/><path d="M${w - 1} ${y}q5 -4 9 1t9 0" fill="none" stroke="${TH_LN}" stroke-width="1" stroke-linecap="round" opacity=".6"/>`); }
+  return `<svg viewBox="0 0 ${w + (cut ? 20 : 0)} ${h}" role="img" aria-label="${twill ? 'あや織' : '平織'}の つくり${cut ? '（切り口）' : ''}">${R.join('')}</svg>`;
 }
+function knitSvg(hue, cut) {
+  // 1段＝1本の 糸が ループ（頭）と あしを くり返す。段を 上から 描き、最後に あしだけ 上から 重ねる → 下の 段の 頭が 上の 段の ループを くぐって 見える（教科書 p.186 図2 の 組織図の 考え方）
+  const A = hueCss(hue, 46), B = hueCss(hue, 66), cols = 5, rows = 5, sx = 22, sy = 14, w = cols * sx + 8, h = rows * sy + 24, R = [`<rect width="${w}" height="${h + (cut ? 16 : 0)}" fill="#fdfaf3"/>`];
+  const X = (i) => 4 + i * sx + sx / 2, base = (j) => 16 + j * sy;
+  const course = (j) => { const b = base(j); let d = `M${X(0) - 9} ${b + 9}`;
+    for (let i = 0; i < cols; i++) { const x = X(i);
+      d += `C${x - 9} ${b + 3} ${x - 7} ${b} ${x - 6} ${b - 3}C${x - 6} ${b - 13} ${x + 6} ${b - 13} ${x + 6} ${b - 3}C${x + 7} ${b} ${x + 9} ${b + 3} ${x + 9} ${b + 9}`;
+      if (i < cols - 1) d += `Q${x + sx / 2} ${b + 15} ${X(i + 1) - 9} ${b + 9}`; }
+    return d; };
+  const legs = (j) => { const b = base(j); let d = '';
+    for (let i = 0; i < cols; i++) { const x = X(i); d += `M${x - 9} ${b + 9}C${x - 9} ${b + 3} ${x - 7} ${b} ${x - 6} ${b - 3}M${x + 6} ${b - 3}C${x + 7} ${b} ${x + 9} ${b + 3} ${x + 9} ${b + 9}`; }
+    return d; };
+  const draw = (d, c) => `<path d="${d}" fill="none" stroke="#fdfaf3" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${c}" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>`;
+  for (let j = 0; j < rows; j++) R.push(draw(course(j), j % 2 ? B : A));
+  for (let j = 0; j < rows; j++) R.push(draw(legs(j), j % 2 ? B : A));
+  if (cut) [0, 2, 3].forEach((i, n) => { const x = X(i) + 9, y = base(rows - 1) + 9; R.push(`<path d="M${x} ${y}q4 6 0 10t1 ${6 + n * 2}" fill="none" stroke="${(rows - 1) % 2 ? B : A}" stroke-width="3.6" stroke-linecap="round"/>`); });
+  return `<svg viewBox="0 0 ${w} ${h + (cut ? 16 : 0)}" role="img" aria-label="編物の つくり${cut ? '（切り口）' : ''}">${R.join('')}</svg>`;
+}
+function feltSvg(hue, cut) {
+  const A = hueCss(hue, 48), B = hueCss(hue, 70), r = rnd(23), w = 106, h = 89, R = [`<rect width="${w}" height="${h}" fill="${hueCss(hue, 90)}"/>`];
+  for (let i = 0; i < 90; i++) { const x = r() * w, y = r() * h, a = r() * Math.PI * 2, l = 9 + r() * 13, x2 = x + Math.cos(a) * l, y2 = y + Math.sin(a) * l;
+    const cx = (x + x2) / 2 + Math.cos(a + 1.5) * 5, cy = (y + y2) / 2 + Math.sin(a + 1.5) * 5;
+    R.push(`<path d="M${x.toFixed(1)} ${y.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="${i % 3 ? A : B}" stroke-width="1.7" stroke-linecap="round"/>`); }
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="不織布の つくり${cut ? '（切り口）' : ''}"><defs><clipPath id="fc${hue}"><rect width="${w}" height="${h}"/></clipPath></defs><g clip-path="url(#fc${hue})">${R.join('')}</g>${cut ? `<line x1="${w - 0.75}" y1="0" x2="${w - 0.75}" y2="${h}" stroke="${TH_LN}" stroke-width="1.5"/>` : ''}</svg>`;
+}
+const PULL = { ori: 1.04, twill: 1.05, ami: 1.42, fu: 1.03 };
+function clothArt(k, hue, mode) {
+  const cut = mode === 'cut', svg = k === 'ori' ? weaveSvg(hue, false, cut) : k === 'twill' ? weaveSvg(hue, true, cut) : k === 'ami' ? knitSvg(hue, cut) : feltSvg(hue, cut);
+  return `<div class="csw${mode === 'pull' ? ' pull' : ''}" style="--pull:${PULL[k]}">${svg}</div>`;
+}
+// 引っぱる・切り口を 見た ときの ことば（教科書 p.186・p.212。言い切れない ことは 書かない）
+const CLOTH_NOTE = { pull: { ori: 'あまり のびない（型くずれしにくい）', ami: 'よく のびる（伸び縮みしやすい）', fu: '引っぱるより、切り口を 見よう' },
+  cut: { ori: '切り口から、糸が ほつれて 出てくる', ami: '切り口から、糸が ほどけて くる ことが ある', fu: '切り口が ほつれない（繊維が からみあっている）' } };
 function c1Tsumugi() {
   const k = S.story.c1;
   if (k === 'start') return talkSeq('ギルド長ツムギ', [
@@ -3842,7 +3917,12 @@ function towerF2() {
   const real = `<div class="real"><b><span class="material-symbols-outlined" style="font-size:18px;vertical-align:-4px">pan_tool</span> 教室の 布で たしかめよう</b>（ゲームを いったん とめて）
     <ul><li>引っぱる：どの 布が よく のびる？</li><li>切り口を 見る・ほどく：糸が ほどけて 出てくる？</li><li>キットの フリースと フェルトも、さわって くらべよう</li></ul><p class="sub" style="margin:4px 0 0">わかったことは、ワークシートに 書こう</p></div>`;
   openSheet(`<h2>2階　布の階</h2><p class="sub">糸を 布に する。布の つくりは 3つ</p>
-    <div class="cloths">${Object.keys(CLOTH).map((k) => `<div class="cloth">${clothSvg(k, m.hue)}<b>${gl(CLOTH[k].n)}</b>${CLOTH[k].d}</div>`).join('')}</div>
+    <div class="cloths">${Object.keys(CLOTH).map((k) => { const v = (t.view || {})[k];
+      const sws = k === 'ori' ? `<figure>${clothArt('ori', m.hue, v)}<figcaption>平織</figcaption></figure><figure>${clothArt('twill', m.hue, v)}<figcaption>あや織（斜文織）</figcaption></figure>` : `<figure>${clothArt(k, m.hue, v)}</figure>`;
+      return `<div class="cloth"><b>${gl(CLOTH[k].n)}</b><span class="lupe"><span class="material-symbols-outlined">zoom_in</span>拡大</span><div class="sws">${sws}</div><div class="cd">${CLOTH[k].d}</div>
+        ${t.real ? `<div class="ctools"><button data-v="${k}:pull" class="${v === 'pull' ? 'on' : ''}"><span class="material-symbols-outlined">arrow_range</span>引っぱる</button><button data-v="${k}:cut" class="${v === 'cut' ? 'on' : ''}"><span class="material-symbols-outlined">content_cut</span>切り口</button></div><p class="cnote">${v ? CLOTH_NOTE[v][k] : ''}</p>` : ''}
+        ${solved === 3 ? `<div class="cex">${CLOTH[k].ex}</div>` : ''}</div>`; }).join('')}</div>
+    ${t.real ? '<p class="sub" style="text-align:center;margin:-4px 0 8px">教室の 布で たしかめた ことを、ゲームでも「引っぱる」「切り口」で 見て くらべよう</p>' : ''}
     ${!t.real ? `${real}<div class="row"><button id="bBack">塔の 入口へ</button><button class="main" id="bReal">たしかめた（依頼へ）</button></div>`
     : `<p class="guide"><span class="material-symbols-outlined">touch_app</span><span>依頼に 合う 布の つくりを えらんで、${esc(m.name)}を 進化させよう（${solved}/3）</span></p>
       <div class="reqs">${C1_REQ.map((q, i) => { const pk = t.r[i], ok = pk === q.ans; return `<div class="req${ok ? ' ok' : ''}"><b>依頼${i + 1}</b>　${gl(q.t)}
@@ -3853,6 +3933,12 @@ function towerF2() {
   if ($('#bReal')) { $('#bReal').onclick = () => { t.real = true; saveGame(); towerF2(); }; $('#bReal').focus(); }
   if ($('#bReal2')) $('#bReal2').onclick = () => { openSheet(`<h2>2階　布の階</h2>${real}<div class="row"><button class="main" id="bBack">もどる</button></div>`, true); $('#bBack').onclick = towerF2; };
   $('#sheet').querySelectorAll('[data-q]').forEach((b) => (b.onclick = () => { t.r[+b.dataset.q] = b.dataset.k; saveGame(); towerF2(); }));
+  $('#sheet').querySelectorAll('[data-v]').forEach((b) => (b.onclick = () => {   // 引っぱる・切り口（もう一度 おすと もとに もどる）。のびる 動きが 見えるように、いったん もとの 形で 描いてから 変える
+    const [k, v] = b.dataset.v.split(':'), view = t.view || (t.view = {}), y = $('#sheet').scrollTop;
+    const to = view[k] === v ? null : v;
+    if (to === 'pull') { view[k] = null; towerF2(); $('#sheet').scrollTop = y; requestAnimationFrame(() => requestAnimationFrame(() => { view[k] = 'pull'; $('#sheet').querySelectorAll('.cloth')[Object.keys(CLOTH).indexOf(k)].querySelectorAll('.csw').forEach((s) => s.classList.add('pull')); const n = $('#sheet').querySelectorAll('.cloth')[Object.keys(CLOTH).indexOf(k)]; n.querySelector('.cnote').textContent = CLOTH_NOTE.pull[k]; n.querySelectorAll('[data-v]').forEach((x) => x.classList.toggle('on', x.dataset.v === `${k}:pull`)); })); return; }
+    view[k] = to; towerF2(); $('#sheet').scrollTop = y;
+  }));
   if ($('#bNext')) { $('#bNext').onclick = () => { t.f = Math.max(t.f, 2); saveGame(); towerF3(); }; $('#bNext').focus(); }
 }
 // 3階：合体（混用）。最初は ワイシャツの ポリエステル65%・綿35%
@@ -3867,7 +3953,8 @@ function towerF3() {
   ], () => { t.m = 1; addNazo('塔の 3階で、マトイさんは コートを「上等な 絹 100%」と じまんした', 4); saveGame(); towerF3(); }, '合体の 台へ');
   const rows = STAT.map((n, k) => ({ n, a: FIB[P].st[k], b: FIB[C].st[k], x: mixStat(P, C, k) })), upK = rows.findIndex((r) => r.x > r.a);
   const tag = '<div style="text-align:center"><span class="qtag">ワイシャツ　ポリエステル 65%　綿 35%</span></div>';
-  const band = `<div class="fuse"><div style="flex:65;background:${hueCss(7, 80)}">ポリエステル 65%</div><div style="flex:35;background:${hueCss(2, 80)}">綿 35%</div></div>`;
+  const band = `<figure class="yarn" style="flex-direction:column;align-items:center;margin:6px 0 0">${yarnSvg(3, 7, 2)}<figcaption>ポリエステルと 綿の 繊維を まぜて、よりを かけた 糸 → 布に（混用）</figcaption></figure>
+    <div class="fuse"><div style="flex:65;background:${hueCss(7, 80)}">ポリエステル 65%</div><div style="flex:35;background:${hueCss(2, 80)}">綿 35%</div></div>`;
   const table = (show) => `<table class="mix"><tr><th></th><th>ポリエステル</th><th>綿</th><th>合体（65:35）</th></tr>${rows.map((r) => `<tr><th>${r.n}</th><td>${SYM[r.a]}</td><td>${SYM[r.b]}</td><td class="${show && r.x > r.a ? 'up' : ''}">${show ? (r.x > r.a ? `${SYM[r.a]}→${SYM[r.x]}` : SYM[r.x]) : '？'}</td></tr>`).join('')}</table>`;
   const err = t.e ? `<div style="margin-top:6px">${lnHtml({ who: aiNm(), t: aiSnd() + t.e })}</div>` : '';
   let body, btns;
