@@ -3341,6 +3341,9 @@ function goalLine(c) {
   if (c === 0) return JO_GOAL[S.story.jo] || '';
   if (c === 1) return 'ギルドの入口の ツムギに 話しかけて、糸玉から センモンを 生まれさせよう';
   if (c === 2) return C1_GOAL[S.story.c1] || '';
+  if (c === 3) return !S.p.done ? 'ギルドの入口の ツムギに 話しかけて、れんしゅうの依頼を 受けよう'
+    : c2Ready() ? '2つとも ★2いじょう！ ギルドの ツムギに 報告しよう'
+    : '町の依頼：式典の町の おばあさん・峠の ゆうびん屋さんに 話しかけよう（赤い ！）';
   if (c === 4) return C3_GOAL[S.story.c3] || '';
   if (c === 5) return C5_GOAL[S.story.c5 || 'start'] || '';
   if (c === 6) return C6_GOAL[S.story.c6 || 'start'] || '';
