@@ -290,6 +290,16 @@ body.cine .panel, body.cine #prompt { opacity:0; pointer-events:none; }
 @media (prefers-reduced-motion:reduce) { .csw svg { transition:none; } }
 .real { background:#eef5e6; border-radius:6px; padding:8px 12px; outline:1.5px dashed rgba(95,158,60,.65); outline-offset:-3px; font-size:14px; }
 .real ul { margin:4px 0 0; padding-left:1.2em; }
+/* 本物の 晴れ着（美術館の 写真。和装 1・洋装 1）。写真は ウィキメディアから 読みこむ */
+.hare { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; max-width:min(420px,50vh); margin:8px auto 4px; }   /* 1366×768 で 写真と 説明が 1画面に 入る 大きさ */
+.hare figure { margin:0; min-width:0; }
+.hare img, .hare .hfail { display:block; width:100%; height:auto; aspect-ratio:330/460; object-fit:contain; background:#d8d6d0; border:1px solid rgba(46,58,89,.25); border-radius:4px; }
+.hare .hfail { display:flex; align-items:center; justify-content:center; padding:8px; font-size:13px; color:#5a6582; text-align:center; }
+.hare figcaption { font-size:13px; line-height:1.5; margin-top:4px; }
+.hare figcaption b { font-size:14px; }
+.hare .cr { display:block; font-size:12px; color:#5a6582; margin-top:2px; overflow-wrap:anywhere; }
+.hare .cr a { color:inherit; }
+#bHare .material-symbols-outlined { font-size:19px; vertical-align:-4px; margin-right:2px; }
 .real li { margin:2px 0; }
 .reqs { display:flex; flex-direction:column; gap:8px; }
 .req { background:#fff; border:1.5px dashed rgba(46,58,89,.45); border-radius:6px; padding:8px 10px; font-size:14px; }
@@ -2192,6 +2202,28 @@ const CLUES = [
 ];
 const HARE_FIB = '絹';
 const HARE_OK = '絹……そう、絹の晴れ着よ。窓ぎわの たんすに しまっていたから、日に 当たって しまったのね。';
+// 本物の 晴れ着の 写真（和1＋洋2・本人決定 2026-10-25）。繊維の 名前は 鑑定の あとだけ 出す（答えを 先に 見せない）
+// 洋装は CC BY-SA 3.0 → 作者・ライセンス・出どころの 表示が 要る。写真は 縮小版を そのまま 使う（切りぬかない）
+const HARE_PHOTOS = [
+  { kind: '和装', name: '着物', fib: '絹', note: 'むらさきの 布に、すそだけ 松の 絵。1925〜50年ごろ', alt: 'むらさきの 着物を 広げた 写真。すそに 松の 絵',
+    src: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/MET_DP258874.jpg/330px-MET_DP258874.jpg',
+    cr: '<a href="https://www.metmuseum.org/art/collection/search/76985" target="_blank" rel="noopener">The Metropolitan Museum of Art</a>（CC0）' },
+  { kind: '洋装', name: 'カクテルドレス', fib: '絹', note: '銅色の 布の、お祝いの 席の ドレス。1960〜70年ごろ', alt: '銅色の ドレスを マネキンに 着せた 写真',
+    src: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Coctailjurk%2C_objectnr_KA_19654.jpg/330px-Coctailjurk%2C_objectnr_KA_19654.jpg',
+    cr: 'Eijlders Couture / Amsterdam Museum, <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.ja" target="_blank" rel="noopener">CC BY-SA 3.0</a>, via <a href="https://commons.wikimedia.org/wiki/File:Coctailjurk,_objectnr_KA_19654.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>' },
+];
+const hareFigs = () => `<div class="hare">${HARE_PHOTOS.map((h) => `<figure><img src="${h.src}" alt="${h.alt}" width="330" height="460" referrerpolicy="no-referrer">
+  <figcaption><b>${h.kind}</b>　${h.name}${S.q.appraised ? `（${h.fib}）` : ''}<br>${h.note}<span class="cr">写真：${h.cr}</span></figcaption></figure>`).join('')}</div>`;
+function hareBind() {   // 学校の ネットワークで 止められても、こわれた 画像の しるしを 出さない
+  $('#sheet').querySelectorAll('.hare img').forEach((im) => (im.onerror = () => { const d = document.createElement('div'); d.className = 'hfail'; d.textContent = '写真を 読みこめなかった'; im.replaceWith(d); }));
+}
+function openHarePhotos(back) {
+  openSheet(`<h2>本物の 晴れ着</h2><p class="sub">晴れ着には、和装（着物）も 洋装（ドレス）も ある。美術館に ある 本物の 写真だよ</p>
+    ${hareFigs()}
+    ${S.q.appraised ? `<p class="sub" style="margin-top:6px">${gl('2着とも 絹。つやが あって 美しいけれど、絹は 日光で黄ばむ（表1）')}</p>` : ''}
+    <div class="row"><button class="main" id="bBack">もどる</button></div>`);
+  hareBind(); $('#bBack').onclick = back; $('#bBack').focus();
+}
 function hareHint(f) {
   const ty = FIB[f].type, lead = `${aiSnd()}根拠を もう一度 たしかめよう。`;
   if (ty === '植物') return `${lead}${f}は、日光で 黄ばむかな？ 表1の「洗濯や手入れの特徴」を見よう。`;
@@ -2299,27 +2331,32 @@ function openTalk() {
     ${ASKS.filter((x) => q.asked.includes(x.id)).map((x) => `<p class="ask">${me()}「${x.ask}」<br><span class="voice">おばあさん「${gl(x.ans)}」</span></p>`).join('')}
     ${['ようす', '気持ち'].map((kind) => { const rest = ASKS.filter((x) => x.kind === kind && !q.asked.includes(x.id)); return rest.length ? `<p class="kind">${kind}を 聞く</p><div class="asks">${rest.map((x) => `<button data-a="${x.id}"${left ? '' : ' disabled'}>${x.ask}</button>`).join('')}</div>` : ''; }).join('')}
     ${left ? '' : `<p class="sub" style="margin-top:6px">もう聞けない。${q.tries ? '' : '聞けなかったことは、旅で たしかめよう（旅のあと、もう2つ 聞ける）'}</p>`}
-    <div class="row"><button class="main" id="bToForm">② フォーメーションへ</button><button id="bClose">とじる</button></div>`);
+    <div class="row"><button class="main" id="bToForm">② フォーメーションへ</button><button id="bHare">晴れ着の 写真</button><button id="bClose">とじる</button></div>`);
   $('#sheet').querySelectorAll('[data-a]').forEach((bt) => (bt.onclick = () => { const id = bt.dataset.a; q.asked.push(id); if (!q.found.includes(id)) q.found.push(id); renderQuest(); openTalk(); }));
-  $('#bToForm').onclick = openForm; $('#bClose').onclick = closeSheet;
+  $('#bToForm').onclick = openForm; $('#bHare').onclick = () => openHarePhotos(openTalk); $('#bClose').onclick = closeSheet;
 }
 function openAppraise() {
   const q = S.q;
   openSheet(`<h2>${QUEST.who}</h2><p class="sub">① 聞き込み：まずは 晴れ着の布を しらべよう。手がかりを見て、何の繊維か 当てる（教科書の表1を見てよい）。点線の ことばは、クリックすると 説明が 出る</p>
     ${OPEN.map((s) => say('おばあさん', s)).join('')}
+    <div class="row" style="justify-content:flex-start;margin:4px 0 8px"><button id="bHare"><span class="material-symbols-outlined" aria-hidden="true">photo_library</span> 本物の 晴れ着を 見る（写真）</button></div>
     <div class="asks">${CLUES.map((c, i) => (q.clues.includes(i) ? `<p class="ask"><b>${aiNm()}</b>「${gl(aiSnd() + c.say)}」${c.ans ? `<br><span class="voice">おばあさん「${gl(c.ans)}」</span>` : ''}<br><small style="color:#5a6582">${gl(`表1の「${c.col}」を見よう`)}</small></p>` : `<button data-c="${i}">${aiNm()}：${c.btn}</button>`)).join('')}</div>
     <p style="margin:10px 0 4px;font-size:14px"><b>この晴れ着の布は？</b></p>
     <div class="fibs">${Object.keys(FIB).map((f) => `<button data-f="${f}">${f}</button>`).join('')}</div>
     ${q.guess ? say(aiNm(), q.guess) : ''}
     <div class="row"><button id="bClose">とじる</button></div>`);
+  $('#bHare').onclick = () => openHarePhotos(openAppraise);
   $('#sheet').querySelectorAll('[data-c]').forEach((bt) => (bt.onclick = () => { q.clues.push(+bt.dataset.c); openAppraise(); }));
   $('#sheet').querySelectorAll('[data-f]').forEach((bt) => (bt.onclick = () => {
     const f = bt.dataset.f;
     if (f !== HARE_FIB) { q.guess = hareHint(f); return openAppraise(); }
     q.appraised = true; q.guess = null; renderQuest();
-    openSheet(`<h2>晴れ着の布は「絹」</h2><p class="sub">${gl('絹は 日光で黄ばむ（表1）。しまう所も 大事')}</p>${say('おばあさん', HARE_OK)}${say('おばあさん', OPEN[1])}
+    openSheet(`<h2>晴れ着の布は「絹」</h2><p class="sub">${gl('絹は 日光で黄ばむ（表1）。しまう所も 大事')}</p>${say('おばあさん', HARE_OK)}
+      <p class="kind">本物の 晴れ着も 見てみよう（美術館の 写真）</p>${hareFigs()}
+      <p class="sub" style="margin-top:4px">和装も 洋装も、どちらも 絹の 晴れ着。つやが あって 美しい</p>
+      ${say('おばあさん', OPEN[1])}
       <div class="row"><button class="main" id="bAsk">話を 聞く（聞き込み）</button></div>`);
-    $('#bAsk').onclick = openTalk;
+    hareBind(); $('#bAsk').onclick = openTalk;
   }));
   $('#bClose').onclick = closeSheet;
 }
