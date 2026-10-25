@@ -84,6 +84,11 @@ table.tb th { background:var(--kinari2); white-space:nowrap; }
 @keyframes gblink { 50% { opacity:.3; } }
 .torso.focus-skin .gar[data-layer="out"], .torso.hov-skin .gar[data-layer="out"], .torso.focus-skin .gar[data-layer="mid"], .torso.hov-skin .gar[data-layer="mid"],
 .torso.focus-mid .gar[data-layer="out"], .torso.hov-mid .gar[data-layer="out"] { opacity:.25; }   /* 肌着を えらぶときは、上着を すかして 肌着ぜんぶを 見せる */
+.torso .yk-l { fill:none; stroke:rgba(46,58,89,.55); stroke-width:1.4; pointer-events:none; }
+.torso .yk-e { fill:rgba(46,58,89,.2); stroke:rgba(46,58,89,.75); stroke-width:1.4; stroke-linejoin:round; }   /* 衿 */
+.torso .yk-obi { fill:#3d4f7a; stroke:rgba(46,58,89,.85); stroke-width:1.4; }   /* 帯 */
+.torso .yk-st { fill:none; stroke:rgba(255,255,255,.75); stroke-width:1; stroke-dasharray:3 2.5; pointer-events:none; }
+.gar.empty .yk-obi { opacity:.45; }
 .glab { font-size:12px; font-weight:700; fill:var(--ai); stroke:#fff; stroke-width:3px; paint-order:stroke; pointer-events:none; }
 .glab.off { fill:#9a9280; }
 .glab.sm { font-size:12px; }   /* まん中の字も 読める大きさに（白いふちで 服の線に かかっても 読める） */
@@ -538,6 +543,13 @@ input.line:focus { outline:2px solid rgba(200,85,61,.35); }
 #quest .did { color:#8a8f7a; }
 button:disabled { opacity:.45; cursor:default; }
 .asks { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+.kitsuke { display:grid; grid-template-columns:210px minmax(0,1fr); gap:10px 16px; align-items:start; margin:8px 0; }
+.ktorso svg { display:block; width:100%; max-width:210px; height:auto; margin:0 auto; }
+.ktorso .gar { cursor:default; pointer-events:none; }
+.kopt { display:block; width:100%; text-align:left; margin:6px 0 0; }
+.kopt.on { outline:3px solid var(--akane); outline-offset:-1px; background:#fbecc4; }
+.khint { margin-top:8px; }
+@media (max-width:640px) { .kitsuke { grid-template-columns:minmax(0,1fr); } .ktorso svg { max-width:160px; } }
 .asks button { text-align:left; }
 .ask { margin:8px 0 0; font-size:16px; line-height:1.8; }
 .memo { background:#fffdf6; border:1.5px dashed rgba(46,58,89,.5); border-radius:4px; padding:6px 8px; font-size:13px; margin-bottom:8px; }
@@ -714,6 +726,8 @@ const S = {
   outbox: [], sent: {},   // 先生に 届ける 書いたもの・依頼・推理（送れるまで ためておく）／送った 答えの しるし
   // 第2章 寒さの依頼「雪の峠」（T4）
   y: { stage: 0, asked: [], found: [], reason: null, tries: 0, best: 0, done: false, notes: [], checked: false, guess: null, keep: 0, hearts: 0 }, yform: { out: [null, null], mid: [null, null], skin: [null, null] }, ydressed: null, nearPost: false,
+  // 第2章 ゆかたの依頼「夏祭りの村」（和服の 着方＝右前）
+  m: { stage: 0, asked: [], found: [], reason: null, tries: 0, best: 0, done: false, notes: [], kitsuke: false, awase: null, miss: 0, keep: 0, hearts: 0 }, mform: { out: [null, null], mid: [null, null], skin: [null, null] }, mdressed: null, nearMatsuri: false,
 };
 let THREE, renderer, scene, camera, raycaster, ground, player;
 const FOLLOW = [], WILDS = [];
@@ -1110,10 +1124,51 @@ function buildTown(o) {
         [-1, 1].forEach((s) => M(new THREE.CylinderGeometry(0.09 * k, 0.09 * k, 0.02 * k, 16), 0xe2c27a, g).position.set(0.2 * k, hip + 0.02 * k + s * 0.07 * k, 0.3 * k));
       } } });
 }
+// 夏祭りの村の子（第2章 ゆかたの依頼・仮）：旅の あと、仕立てた ゆかたを 着る。ツムギの 着物の 形を 写した（衿は 右前・袂・帯）。げたと うちわ
+TOWN_LOOK.natsu = { top: 0xf6d77a, leg: 0x6a86b0, shoe: 0xe9e2d0, hair: 0x3a2a22, face: { eyes: 'smile', iris: 0x4a3426, brow: 0x3a2a22, mouth: 'smile' }, hat: 'band', hatC: 0xd9564b };
+function buildYukata(o) {
+  const hc = 0x3a2a22, kim = o.kim;
+  return avatar({ H: 2.3, longSkirt: true, top: kim, arm: kim, face: { eyes: 'smile', iris: 0x4a3426, brow: 0x3a2a22, mouth: 'smile' },
+    hair: (P) => { hairCap(P, hc, 0.3, 0.7); bangs(P, hc, 3, 1.0, { len: 0.85, y: 0.5 }); sideLocks(P, hc, 0.6); },
+    outfit: (P) => { const { g, k, hip, sh } = P;
+      lathe(g, [[0.0, 0.1 * k], [0.3 * k, 0.1 * k], [0.31 * k, 0.4 * k], [0.3 * k, hip + 0.2 * k], [0.3 * k, sh - 0.12 * k]], kim);
+      ring(g, 0.16 * k, 0.314 * k, 30, thread(kim), 0.016 * k);
+      [-1, 1].forEach((s) => {   // げた（はだしに 赤い 鼻緒）
+        M(new THREE.BoxGeometry(0.17 * k, 0.07 * k, 0.3 * k), 0xc9a06a, g).position.set(s * 0.12 * k, 0.035 * k, 0.05 * k);
+        const ft = M(new THREE.SphereGeometry(0.08 * k, 12, 8), C.skin, g); ft.scale.set(0.9, 0.5, 1.4); ft.position.set(s * 0.12 * k, 0.09 * k, 0.06 * k);
+        M(new THREE.BoxGeometry(0.03 * k, 0.025 * k, 0.12 * k), C.akane, g, { ol: false }).position.set(s * 0.12 * k, 0.125 * k, 0.11 * k); });
+      M(new THREE.CylinderGeometry(0.31 * k, 0.31 * k, 0.15 * k, 32), o.obi, g).position.y = hip + 0.36 * k;
+      const knot = M(new THREE.BoxGeometry(0.36 * k, 0.15 * k, 0.1 * k), o.obi, g); knot.position.set(0, hip + 0.38 * k, -0.33 * k);
+      // 衿：右前（見る側から「y」の字。上に重なる衿は、見る側の右上から左下へ）
+      const pr = [[hip + 0.2 * k, 0.302 * k], [sh - 0.12 * k, 0.302 * k], [sh - 0.03 * k, 0.272 * k], [sh + 0.02 * k, 0.11 * k]];
+      const rr = (y) => { if (y <= pr[0][0]) return pr[0][1]; for (let i = 1; i < pr.length; i++) if (y <= pr[i][0]) { const u = (y - pr[i - 1][0]) / (pr[i][0] - pr[i - 1][0]); return pr[i - 1][1] + (pr[i][1] - pr[i - 1][1]) * u; } return pr[pr.length - 1][1]; };
+      const band = (a, b, w, c, d) => { const pts = []; for (let i = 0; i <= 12; i++) { const x = a[0] + (b[0] - a[0]) * i / 12, y = a[1] + (b[1] - a[1]) * i / 12; pts.push(V(x, y, Math.sqrt(Math.max(0, rr(y) ** 2 - x * x)) + d)); } ribbon(g, pts, w, c); };
+      const oy = hip + 0.45 * k;
+      band([-0.12 * k, sh + 0.01 * k], [0.03 * k, sh - 0.2 * k], 0.085 * k, o.dk, 0.012 * k);
+      band([0.12 * k, sh + 0.01 * k], [-0.1 * k, oy], 0.09 * k, o.dk, 0.028 * k);
+      // 袂：肩から下がる、まるい袋の形の袖
+      const lb = LV().limb;
+      [-1, 1].forEach((s) => { const a = P['shp' + s], b = P['wr' + s], w2 = 0.15 * k * lb, sl = a.distanceTo(b) + 0.22 * k, rB = 0.12 * k, rT = 0.04 * k, dep = 0.24 * k * lb, bt = 0.03 * k;
+        const sp = new THREE.Shape(); sp.moveTo(-w2 + rT, 0); sp.lineTo(w2 - rT, 0); sp.quadraticCurveTo(w2, 0, w2, -rT); sp.lineTo(w2, -sl + rB); sp.quadraticCurveTo(w2, -sl, w2 - rB, -sl);
+        sp.lineTo(-w2 + rB, -sl); sp.quadraticCurveTo(-w2, -sl, -w2, -sl + rB); sp.lineTo(-w2, -rT); sp.quadraticCurveTo(-w2, 0, -w2 + rT, 0);
+        const geo = new THREE.ExtrudeGeometry(sp, { depth: dep, bevelEnabled: true, bevelThickness: bt, bevelSize: bt, bevelSegments: 3, curveSegments: 8 }); geo.translate(0, 0, -dep / 2);
+        const sg = new THREE.Group(); sg.position.set(a.x + s * 0.03 * k, a.y + 0.06 * k, -0.02 * k); sg.rotation.z = Math.atan2(b.x - a.x, a.y - b.y) * 0.8; g.add(sg);
+        M(geo, o.slv, sg);
+        stitchPoly(sg, [V(-w2 + 0.05 * k, -sl + 0.05 * k, dep / 2 + bt + 0.004 * k), V(w2 - 0.05 * k, -sl + 0.05 * k, dep / 2 + bt + 0.004 * k)], false, 0.045 * k, thread(o.slv), 0.015 * k); });
+      // うちわ（手に 持つ）
+      const hd = P.hands[1];
+      capsule(g, hd.clone().add(V(0, -0.02 * k, 0.17 * k)), hd.clone().add(V(0, 0.22 * k, 0.21 * k)), 0.018 * k, 0xc9a06a);   // 袂より 前に 出す
+      const fan = M(new THREE.CylinderGeometry(0.13 * k, 0.13 * k, 0.015 * k, 24), C.white, g); fan.rotation.x = Math.PI / 2; fan.position.copy(hd).add(V(0, 0.34 * k, 0.22 * k));
+      const dot = M(new THREE.CylinderGeometry(0.06 * k, 0.06 * k, 0.018 * k, 18), C.akane, g, { ol: false }); dot.rotation.x = Math.PI / 2; dot.position.copy(fan.position).add(V(0, 0, 0.004 * k));
+      if (o.bag) {   // おばあちゃんの ゆかたで 作った きんちゃく袋（帯に さげる）
+        const bg = M(new THREE.SphereGeometry(0.09 * k, 14, 10), o.bag, g); bg.scale.set(1, 1.2, 0.8); bg.position.set(-0.3 * k, hip + 0.16 * k, 0.14 * k);
+        M(new THREE.CylinderGeometry(0.008 * k, 0.008 * k, 0.12 * k, 6), C.akane, g, { ol: false }).position.set(-0.3 * k, hip + 0.3 * k, 0.15 * k);
+      } } });
+}
 
   const init = () => { if (FELT_S) return; const L = LV(), tx = new THREE.DataTexture(new Uint8Array(L.shade), 4, 1, THREE.LuminanceFormat);
     tx.minFilter = tx.magFilter = THREE.NearestFilter; tx.generateMipmaps = false; tx.needsUpdate = true; TOONS[NUI] = tx; FELTS[NUI] = feltTex(L.felt); FELT_S = feltTex(236, 1200); };
-  return { hero: () => (init(), buildHero()), tsumugi: () => (init(), buildTsumugi()), matoi: () => (init(), buildMatoi()), boron: () => (init(), buildBoron()), town: (k) => (init(), buildTown(TOWN_LOOK[k])) };
+  return { hero: () => (init(), buildHero()), tsumugi: () => (init(), buildTsumugi()), matoi: () => (init(), buildMatoi()), boron: () => (init(), buildBoron()), town: (k) => (init(), buildTown(TOWN_LOOK[k])), yukata: (o) => (init(), buildYukata(o)) };
 })();
 
 /* ===== 相棒3体：三面図-相棒.html を写したもの（メジャ丸・ピンコ＝花の頭・アイロ） ===== */
@@ -1419,6 +1474,7 @@ function groundTex() {
     [REGION.plant, REGION.animal, REGION.chem, REGION.gate].forEach((rg) => tape([[0, 0], [rg.x, rg.z]], 3.4, '#f1e0b6', 'rgba(170,120,60,.85)'));
     tape([[1.5, -2], [SPOTS.touge.x, SPOTS.touge.z], [SPOTS.tower.x, SPOTS.tower.z]], 2.2, '#efdcb0', 'rgba(170,120,60,.8)');
     tape([[4, 0.5], [WASH.x, WASH.z + 1.6]], 2.0, '#efdcb0', 'rgba(170,120,60,.8)');
+    tape([[0, 0], [MURA.x, MURA.z]], 2.6, '#f1e0b6', 'rgba(170,120,60,.85)');   // 夏祭りの村へ
     // 当て布（地方）：ふちに 布の 重なりの かげと、なみ縫い
     const blob = (cx, cz, R, sd) => { c.beginPath(); for (let i = 0; i <= 72; i++) { const a = i / 72 * Math.PI * 2, rr = R * (1 + 0.05 * Math.sin(a * 3 + sd) + 0.035 * Math.sin(a * 5 + sd * 2)), [x, y] = P(cx + Math.cos(a) * rr, cz + Math.sin(a) * rr); i ? c.lineTo(x, y) : c.moveTo(x, y); } c.closePath(); };
     const patch = (rg, fill, thread, sd, r = rg.r) => {
@@ -1432,8 +1488,10 @@ function groundTex() {
     patch(REGION.chem, '#a6c3e8', 'rgba(255,255,255,.95)', 3);
     patch(REGION.gate, '#ddcfb4', 'rgba(140,105,70,.85)', 4);
     patch(REGION.guild, '#f0d9a8', 'rgba(200,85,61,.85)', 5);
+    patch(MURA, '#ecd6a4', 'rgba(200,85,61,.8)', 6);
     // 道の 先の テープを 当て布の 上にも 少し（ギルドから 出る所）
     [REGION.plant, REGION.animal, REGION.chem, REGION.gate].forEach((rg) => { const l = Math.hypot(rg.x, rg.z), ux = rg.x / l, uz = rg.z / l; tape([[ux * 9, uz * 9], [ux * 13, uz * 13]], 3.4, '#f1e0b6', 'rgba(170,120,60,.85)'); });
+    { const l = Math.hypot(MURA.x, MURA.z), ux = MURA.x / l, uz = MURA.z / l; tape([[ux * 9, uz * 9], [ux * 13, uz * 13]], 2.6, '#f1e0b6', 'rgba(170,120,60,.85)'); }
     // 動かない物の 影（やわらかい だ円。光は 右上の 奥から）
     FOOT.forEach(({ x, z, r, h }) => { const [px, py] = P(x - 0.18 * h, z - 0.12 * h), R = r * 1.15 * U, gr = c.createRadialGradient(px, py, 0, px, py, R); gr.addColorStop(0, 'rgba(30,55,30,.42)'); gr.addColorStop(0.6, 'rgba(30,55,30,.2)'); gr.addColorStop(1, 'rgba(30,55,30,0)'); c.fillStyle = gr; c.beginPath(); c.ellipse(px, py, R, R * 0.85, 0, 0, 7); c.fill(); });
     // こまかい 繊維
@@ -1551,6 +1609,23 @@ function buildWorld() {
   [[-1.6, 0.6, 1.1, 0x9ea4a6], [1.8, -0.8, 0.9, 0xaaa59b], [-0.6, -2.2, 0.7, 0x949ca2], [2.4, 1.6, 0.6, 0xb1aca3]].forEach(([dx, dz, r, c]) => pebble(W, SPOTS.touge.x + dx, SPOTS.touge.z + dz, r, c, dx));
   plushCloud(W, SPOTS.touge.x + 0.3, 7.2, SPOTS.touge.z, 1.2, 0xc8d0d8, true);
   const tg = textSprite('雨の峠', 200, 52); tg.scale.multiplyScalar(0.7); tg.position.set(SPOTS.touge.x, 3.4, SPOTS.touge.z - 2.6); scene.add(tg);
+  // 夏祭りの村（第2章 ゆかたの依頼）：紅白の 幕の やぐらと、ちょうちんの 列（小物は 少しだけ。重さを ふやさない）
+  W_TEX.kohaku = wCanvas(128, 32, (c, w, h) => { for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#fbf3e4' : '#d9564b'; c.fillRect(i * w / 8, 0, w / 8, h); } }, [3, 1]);
+  { const x = MURA.x, z = MURA.z;
+    wp(W, new THREE.BoxGeometry(2.6, 1.5, 2.6), 0xffffff, x, 0.75, z, { map: W_TEX.kohaku, t: 0.05 });
+    wp(W, new THREE.BoxGeometry(3.0, 0.22, 3.0), 0xb07a48, x, 1.61, z, { t: 0.04 });
+    [[-1.3, -1.3], [1.3, -1.3], [-1.3, 1.3], [1.3, 1.3]].forEach(([dx, dz]) => wp(W, geo('ypost', () => new THREE.CylinderGeometry(0.08, 0.08, 1.7, 6)), 0x9a6a44, x + dx, 2.55, z + dz, { t: 0.03 }));
+    wp(W, new THREE.ConeGeometry(2.3, 0.9, 4), 0xd9564b, x, 3.85, z, { ry: Math.PI / 4, t: 0.06 });
+    wp(W, new THREE.CylinderGeometry(0.36, 0.36, 0.5, 14), 0xc9a06a, x, 1.97, z, { rz: Math.PI / 2, t: 0.03 });   // たいこ
+    colB(x, z, 1.35, 1.35); foot(x, z, 2.0, 2.5);
+    [[-6.2, -4.2], [5.2, 4.8]].forEach(([dx, dz]) => {   // ちょうちん：やぐらの 上から 柱へ
+      const px = x + dx, pz = z + dz, a = new THREE.Vector3(x, 3.4, z), b = new THREE.Vector3(px, 3.3, pz);
+      wp(W, geo('lpole', () => new THREE.CylinderGeometry(0.09, 0.1, 3.4, 6)), 0x9a6a44, px, 1.7, pz, { t: 0.03 }); colC(px, pz, 0.22); foot(px, pz, 0.4, 2);
+      const rope = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, a.distanceTo(b)), wm(0x6b4a2e, null)); rope.position.copy(a).lerp(b, 0.5); rope.lookAt(b); W.add(rope);
+      [0.22, 0.42, 0.62, 0.82].forEach((t, i) => { const p = a.clone().lerp(b, t); wp(W, geo('lant', () => new THREE.SphereGeometry(1, 10, 8)), i % 2 ? 0xfff1cf : 0xd9564b, p.x, p.y - 0.32, p.z, { s: [0.2, 0.27, 0.2], t: 0.03 }); });
+    });
+  }
+  const mrs = textSprite('夏祭りの村', 220, 52); mrs.scale.multiplyScalar(0.75); mrs.position.set(MURA.x, 5.3, MURA.z); scene.add(mrs);
   // 商人の町：閉じた門と、キルトの 塀
   wp(W, new THREE.BoxGeometry(44, 4, 1.2), 0xffffff, 0, 2, 46, { map: W_TEX.wallQ, t: 0.1 });
   // 塀を 大陸の 水べり（x ±36）まで のばし、はしに 柱。見えない 壁を なくし、塀の 線＝入れない 線に そろえる（本人 2026-10-25「消費へつながる壁が マップ上も 曖昧。しっかり 入れないように」）
@@ -1636,7 +1711,7 @@ function blobShadow(r) {
    円と 箱。動く物（人）は 毎回 位置から。相棒と 野生の センモンは 当たりなし */
 const PR = 0.55;   // 主人公の 太さ
 function pushOut(p) {
-  const people = [TSUMUGI, GRANNY, POST, ...NPCS].filter((o) => o && o.visible !== false);
+  const people = [TSUMUGI, GRANNY, POST, MATSURI, ...NPCS].filter((o) => o && o.visible !== false);
   for (let it = 0; it < 4; it++) {
     let hit = false;
     const circ = (cx, cz, r) => { const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz), m = r + PR; if (d < m) { if (d < 1e-4) { p.x = cx + m; } else { p.x = cx + dx / d * m; p.z = cz + dz / d * m; } hit = true; } };
@@ -1773,6 +1848,19 @@ function dressPost() {
   if (POST) scene.remove(POST);
   POST = new THREE.Group(); POST.add(prep(buildPost())); POST.add(blobShadow(0.8)); POST.position.set(...POST_SPOT); POST.rotation.y = POST_RY; scene.add(POST);
 }
+// 夏祭りの村の ヒナタ（第2章 ゆかたの依頼・仮）。はじめは 夏の ふだん着。旅の あとは、仕立てた ゆかた（外側の色・右前）を 着る
+const MATSURI_SPOT = [-19.5, 0, 24], MATSURI_RY = 2.46;
+let MATSURI = null;
+function buildMatsuri() {
+  const d = S.mdressed, hsl = (h, s, l) => new THREE.Color().setHSL(hueDeg(h) / 360, s, l).getHex();
+  if (!d) { const g = AV.town('natsu'); g.scale.setScalar(0.92); return g; }
+  return AV.yukata({ kim: hsl(d.out, 0.5, 0.6), slv: hsl(d.out, 0.5, 0.66), dk: hsl(d.out, 0.45, 0.36), obi: 0x2f3f66, bag: d.keep === 1 ? 0x5f7fb0 : null });
+}
+function dressMatsuri() {
+  if (!scene || !THREE) return;
+  if (MATSURI) scene.remove(MATSURI);
+  MATSURI = new THREE.Group(); MATSURI.add(prep(buildMatsuri())); MATSURI.add(blobShadow(0.75)); MATSURI.position.set(...MATSURI_SPOT); MATSURI.rotation.y = MATSURI_RY; scene.add(MATSURI);
+}
 function dressGranny() {
   if (GRANNY) scene.remove(GRANNY);
   GRANNY = new THREE.Group(); GRANNY.add(prep(buildGranny())); GRANNY.add(blobShadow(0.8)); GRANNY.position.set(...GRANNY_SPOT); GRANNY.rotation.y = GRANNY_RY; scene.add(GRANNY);
@@ -1793,7 +1881,7 @@ function buildCast() {
   });
   // 話しかける 人は いつも 全員 立てる（重さの 設定で へらさない）。町の人は 軽い作り、マトイ・ボロンは 物語で 近くに 出るので 少しだけ 軽く
   NPC_SPOTS.forEach(([key, x, z, r]) => { const raw = AV[key] ? lowPoly(() => AV[key](), 0.6) : lowPoly(() => AV.town(key)); const n = new THREE.Group(); n.add(prep(raw)); n.add(blobShadow(0.8)); n.position.set(x, 0, z); n.rotation.y = r; n.userData.key = key; scene.add(n); NPCS.push(n); });
-  dressGranny(); dressPost();
+  dressGranny(); dressPost(); dressMatsuri();
   if (TSUMUGI) scene.remove(TSUMUGI);
   TSUMUGI = new THREE.Group(); TSUMUGI.add(prep(AV.tsumugi())); TSUMUGI.add(blobShadow(0.8)); TSUMUGI.position.set(...TSU_SPOT); TSUMUGI.rotation.y = TSU_RY; scene.add(TSUMUGI);
   renderer.setPixelRatio(Math.min(devicePixelRatio, CFG.pr)); resize();
@@ -1825,7 +1913,7 @@ function makePortraits() {
     };
     PORTRAIT.me = shot(body, true);
     AIBOS.forEach((a) => { PORTRAIT['ai_' + a.key] = shot(a.g.children[0], false); });
-    [['tsumugi', TSUMUGI], ['granny', GRANNY], ['post', POST]].forEach(([k, o]) => { if (o) PORTRAIT[k] = shot(o.children[0], true); });
+    [['tsumugi', TSUMUGI], ['granny', GRANNY], ['post', POST], ['matsuri', MATSURI]].forEach(([k, o]) => { if (o) PORTRAIT[k] = shot(o.children[0], true); });
     NPCS.forEach((n) => { PORTRAIT[n.userData.key] = shot(n.children[0], true); });
   } catch (e) { console.warn('姿の絵を 描けなかった（文字の しるしで 出す）', e); }
   finally { if (r) { r.dispose(); if (r.forceContextLoss) r.forceContextLoss(); } }
@@ -1864,6 +1952,7 @@ function syncParty() {
   ['out', 'mid', 'skin'].forEach((k) => { if (!S.form[k][0] && S.form[k][1]) S.form[k] = [S.form[k][1], null]; });
   if (!S.pform[0] && S.pform[1]) S.pform = [S.pform[1], null];
   ['out', 'mid', 'skin'].forEach((k) => { S.yform[k] = S.yform[k].map((n) => (n && inParty(n) ? n : null)); if (!S.yform[k][0] && S.yform[k][1]) S.yform[k] = [S.yform[k][1], null]; });
+  ['out', 'mid', 'skin'].forEach((k) => { S.mform[k] = S.mform[k].map((n) => (n && inParty(n) ? n : null)); if (!S.mform[k][0] && S.mform[k][1]) S.mform[k] = [S.mform[k][1], null]; });
   renderHud();
 }
 function joinWild(s) {
@@ -2031,6 +2120,11 @@ const GLOSS = {
   '晴れ着': 'お祝いの日など、特別な日に着る衣服。',
   '半衿': '和服の下に着る じゅばんの えりに つける布。和服の えりもとに 少し見える。',
   '帯': '和服の こしに まく、長い布。',
+  '和服': '日本の 伝統的な 衣服。着物や ゆかた など。',
+  'ゆかた': '夏に 着る 和服。夏祭りや 花火大会などで 着る ことが 多い。',
+  '身ごろ': '衣服の、胴（体の 前と うしろ）を おおう 部分。和服には、右の 身ごろと 左の 身ごろが ある。',
+  '右前': '和服の 合わせ方。着る人の 右の 身ごろを 先に 体に 合わせ、その上に 左の 身ごろを 重ねる。前から 見ると、衿が「y」の字に 見える。和服は、男女とも 右前に 着る。反対の 左前は、ふだんは 着ない 決まり。',
+  '衿': '衣服の、首の まわりの 部分。和服では、前で 重なる 衿の 向きで、合わせ方（右前）が わかる。',
   '仕立て': '布を 裁って 縫い、衣服に しあげること。仕立て屋は、それを仕事にする人。',
   '汗を吸う': 'センモンの能力の1つ。汗や水蒸気を 吸いとる性質。表1の「着用時の特徴」を見る（綿・麻は「よく吸う」）。',
   'しわに強い': 'センモンの能力の1つ。しわに なりにくい性質。表1の「防しわ性」の記号を見る。',
@@ -2168,18 +2262,25 @@ function tripSteps(ev, ch) {
       hint: '肌側の「乾きやすい」を見よう（まぜた布は、苦手が1段上がる）。帰る前の行動でも かわるかも' },
   ];
 }
+// 第2章の 町の依頼（3つ）。どれか 2つが ★2いじょうで 章が おわる
+const C2Q = () => ({
+  iwai: { Q: S.q, D: QUEST, started: S.q.appraised, mx: askMax(), nm: 'お祝いの式', p: 'おばあさん', spot: GRANNY_SPOT },
+  yuki: { Q: S.y, D: YQ, started: S.y.checked, mx: yAskMax(), nm: '雪の峠', p: 'ゆうびん屋さん', spot: POST_SPOT },
+  matsuri: { Q: S.m, D: MQ, started: S.m.asked.length > 0 || S.m.kitsuke, mx: mAskMax(), nm: '夏祭りの村', p: 'ヒナタ', spot: MATSURI_SPOT },
+});
 function renderC2() {
   if (!S.p.done) return renderPQuest();
-  const yk = S.story.c2act === 'yuki', Q = yk ? S.y : S.q, D = yk ? YQ : QUEST, cur = Q.done ? 4 : Q.stage, started = yk ? S.y.checked : S.q.appraised, mx = yk ? yAskMax() : askMax();
-  const steps = STEPS.map((x0, i) => { const x = `${'①②③④'[i]}${x0}${i === 0 && started ? ` ${Q.asked.length}/${mx}` : ''}`; return i === cur ? `<b class="now">${x}</b>` : i < cur ? `<span class="did">${x}</span>` : `<span>${x}</span>`; }).join(' → ');
-  const sub = c2Ready() && !S.ch.done.includes(3) ? '<b class="now">いま</b>：2つとも ★2いじょう！ ギルドの ツムギに 報告しよう'
+  const T = C2Q(), A = T[S.story.c2act] || T.iwai, Q = A.Q, D = A.D, cur = Q.done ? 4 : Q.stage;
+  const steps = STEPS.map((x0, i) => { const x = `${'①②③④'[i]}${x0}${i === 0 && A.started ? ` ${Q.asked.length}/${A.mx}` : ''}`; return i === cur ? `<b class="now">${x}</b>` : i < cur ? `<span class="did">${x}</span>` : `<span>${x}</span>`; }).join(' → ');
+  const sub = c2Ready() && !S.ch.done.includes(3) ? '<b class="now">いま</b>：町の依頼が 2つ ★2いじょう！ ギルドの ツムギに 報告しよう'
     : Q.best ? `いちばん よかった結果 ${stars3(Q.best)}　気持ち ${'●'.repeat(Q.hearts)}${'○'.repeat(3 - Q.hearts)}${Q.done ? '　達成！' : ''}`
-    : started ? `${yk ? 'ゆうびん屋さん' : 'おばあさん'}の 話を 聞いて、服を 仕立てよう` : `${D.who}に 話しかけよう（赤い ！）`;
+    : A.started && S.story.c2act === 'matsuri' && !S.m.kitsuke ? 'ヒナタと、ゆかたの 着方を たしかめよう'
+    : A.started ? `${A.p}の 話を 聞いて、服を 仕立てよう` : `${D.who}に 話しかけよう（赤い ！）`;
   $('#quest').innerHTML = `<small>依頼</small><br><b>${D.name}</b>　${D.who}<br><span class="steps">${steps}</span><br><span class="steps">${sub}</span>
-    <br><span class="steps" style="color:#5a6582">町の依頼：お祝いの式 ${stars3(S.q.best)}・雪の峠 ${stars3(S.y.best)}</span>`;
+    <br><span class="steps" style="color:#5a6582">町の依頼（2つを ★2に）：お祝いの式 ${stars3(S.q.best)}・雪の峠 ${stars3(S.y.best)}・夏祭りの村 ${stars3(S.m.best)}</span>`;
 }
 const stars3 = (b) => `${'★'.repeat(b || 0)}${'☆'.repeat(3 - (b || 0))}`;
-const c2Ready = () => S.q.best >= 2 && S.y.best >= 2;
+const c2Ready = () => [S.q.best, S.y.best, S.m.best].filter((b) => b >= 2).length >= 2;
 function openTalk() {
   const q = S.q; S.story.c2act = 'iwai';
   if (S.ch.open < 3) {   // 第2章の前：まだ 依頼は ない
@@ -2263,20 +2364,35 @@ const TORSO = {
     'M130 42C148 44 174 44 188 56L202 64L208 150L186 152L180 110C170 128 164 146 166 162C168 180 174 196 174 212L126 212L122 122L136 70Z'],
 };
 let FLASH = null;   // 置いたばかりの服（2回 点滅して知らせる）
+// ゆかたの 依頼の 外側：前を 合わせて 帯を しめた形。dir＝'R'（右前：着る人の 右の 身ごろが 先・左が 上。見る側から「y」の字）／'L'（左前）
+// 上に 重なる 衿は、右前なら 見る側の 右上から 左下へ。左前は 左右を うつした形
+function ykOut(dir, f) {
+  const mx = (p) => (dir === 'L' ? [220 - p[0], p[1]] : p), U = [[84, 40], [114, 118]].map(mx), T = [[136, 40], [98, 130]].map(mx), E = [[96, 150], [92, 212]].map(mx);
+  const ux = (y) => U[0][0] + (U[1][0] - U[0][0]) * (y - U[0][1]) / (U[1][1] - U[0][1]), tx = (y) => T[0][0] + (T[1][0] - T[0][0]) * (y - T[0][1]) / (T[1][1] - T[0][1]);
+  let lo = 40, hi = 130; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; (ux(m) - tx(m)) * (ux(40) - tx(40)) > 0 ? (lo = m) : (hi = m); }
+  const V = [tx(lo), lo];   // 2本の 衿が 交わる 所（V の 底）
+  const band = (a, b, w) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy), sg = Math.sign(a[0] - 110), nx = Math.abs(dy / l) * sg, ny = -dx / l * Math.sign(dy / l) * sg;
+    return [a, b, [b[0] + nx * w, b[1] + ny * w], [a[0] + nx * w, a[1] + ny * w]].map((q) => q.map((v) => v.toFixed(1)).join(' ')).join(' '); };
+  const sil = `M84 40C70 42 48 44 34 52L12 58Q4 60 4 68L4 142Q4 152 14 152L44 152L46 212L174 212L176 152L206 152Q216 152 216 142L216 68Q216 60 208 58L186 52C172 44 150 42 136 40L${V[0].toFixed(1)} ${V[1].toFixed(1)}Z`;
+  return `<path class="gp" d="${sil}" fill="${f}"/><path class="gs" d="${sil}"/>
+    <path class="yk-l" d="M44 102L44 152M176 102L176 152M${E[0].join(' ')}L${E[1].join(' ')}"/>
+    <polygon class="yk-e" points="${band(U[0], V, 9)}"/><polygon class="yk-e" points="${band(T[0], T[1], 9)}"/>
+    <rect class="yk-obi" x="44" y="122" width="132" height="24" rx="2"/><path class="yk-st" d="M47 126H173M47 142H173"/>`;
+}
 function torsoSvg(o) {
   const lay = (k) => o.layers.find((x) => x.k === k), who = (k, i) => o.get(k, i) && byName(o.get(k, i));
-  const fill = (k) => (!who(k, 0) ? '#fff' : who(k, 1) ? `url(#pt-${k})` : hueCss(who(k, 0).hue, 72));
+  const fill = (k) => (o.paint && o.paint[k] ? o.paint[k] : !who(k, 0) ? '#fff' : who(k, 1) ? `url(#pt-${k})` : hueCss(who(k, 0).hue, 72));
   const pat = (k) => (who(k, 0) && who(k, 1) ? `<pattern id="pt-${k}" patternUnits="userSpaceOnUse" width="8" height="8"><rect width="8" height="8" fill="${hueCss(who(k, 0).hue, 72)}"/><rect width="3.4" height="3.4" fill="${hueCss(who(k, 1).hue, 72)}"/><rect x="4" y="4" width="3.4" height="3.4" fill="${hueCss(who(k, 1).hue, 72)}"/></pattern>` : '');   // 混用の布＝細かい織り目（まぜる色が 約35%）。太いしまは「しま柄の服」に見えるので やめた
   const selK = FSEL && FSEL.k, flash = FLASH, hasMid = !!(lay('mid') && !lay('mid').lock);
   FLASH = null;
-  const gar = (k) => { const lock = !!lay(k).lock;
-    return `<g class="gar${lock ? ' lock' : ''}${!lock && !who(k, 0) ? ' empty' : ''}${selK === k ? ' on' : ''}${flash === k ? ' just' : ''}" data-layer="${k}">${TORSO[k].map((d) => `<path class="gp" d="${d}" fill="${lock ? 'none' : fill(k)}"/><path class="gs" d="${d}"/>`).join('')}</g>`; };
+  const gar = (k) => { const lock = !!lay(k).lock, empty = !lock && !who(k, 0) && !(o.paint && o.paint[k]);
+    return `<g class="gar${lock ? ' lock' : ''}${empty ? ' empty' : ''}${selK === k ? ' on' : ''}${flash === k ? ' just' : ''}" data-layer="${k}">${k === 'out' && o.yukata ? ykOut(o.yukata, lock ? 'none' : fill(k)) : TORSO[k].map((d) => `<path class="gp" d="${d}" fill="${lock ? 'none' : fill(k)}"/><path class="gs" d="${d}"/>`).join('')}</g>`; };
   return `<svg viewBox="0 0 220 256" class="torso${selK ? ` focus-${selK}` : ''}${FSEL && FSEL.n ? ' aim' : ''}" role="img" aria-label="服の 重なり（トルソー）"><defs>${pat('out')}${pat('mid')}${pat('skin')}</defs>
     <rect x="106" y="212" width="8" height="34" fill="#b08a5a"/><ellipse cx="110" cy="247" rx="36" ry="6" fill="#b08a5a"/>
     <rect x="100" y="14" width="20" height="28" fill="#e8dcc0"/><ellipse cx="110" cy="14" rx="13" ry="6" fill="#c9a57a"/>
     <path d="${TORSO.body}" fill="#e8dcc0" stroke="rgba(46,58,89,.35)"/>
-    ${gar('skin')}${hasMid ? gar('mid') : ''}${gar('out')}
-    ${hasMid ? '<text class="glab" x="110" y="68" text-anchor="middle">肌側</text><text class="glab sm" x="110" y="188" text-anchor="middle">まん中</text>' : '<text class="glab" x="110" y="104" text-anchor="middle">肌側</text>'}<text class="glab${lay('out').lock ? ' off' : ''}" x="70" y="200" text-anchor="middle">外側</text></svg>`;
+    ${gar('skin')}${hasMid ? gar('mid') : ''}${lay('out') ? gar('out') : ''}
+    ${hasMid ? '<text class="glab" x="110" y="68" text-anchor="middle">肌側</text><text class="glab sm" x="110" y="188" text-anchor="middle">まん中</text>' : `<text class="glab" x="110" y="${lay('out') && o.yukata ? 67 : 104}" text-anchor="middle">肌側</text>`}${lay('out') ? `<text class="glab${lay('out').lock ? ' off' : ''}" x="${o.yukata === 'L' ? 150 : 70}" y="200" text-anchor="middle">外側</text>` : ''}</svg>`;
 }
 function boardHtml(o) {
   const at = (n) => { for (const L of o.layers) for (const i of [0, 1]) if (!L.lock && o.get(L.k, i) === n) return `${LNAME[L.k]}（${i ? 'まぜる' : 'おもな'}）`; return ''; };
@@ -2298,7 +2414,7 @@ function boardHtml(o) {
     : FSEL ? `<b>${LNAME[FSEL.k]}の ${PART[FSEL.i]}</b>に 置く子を、てもちから タップ（点滅している 服）`
     : '① てもちの センモンを タップ　→　② 服か、布の 欄を タップ';
   return `<div class="fwrap${FSEL && FSEL.n ? ' aiming' : ''}" id="fboard"><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>${guide}</span></p>
-    <div class="ftorso">${torsoSvg(o)}<p class="tcap">服を タップしても えらべる</p></div>
+    <div class="ftorso">${torsoSvg(o)}<p class="tcap">服を タップしても えらべる${o.yukata ? `<br>ゆかた：${o.yukata === 'R' ? '右前' : '左前'}（前から 見ると 衿が「y」の字）` : ''}</p></div>
     <div class="fleft"><div class="board"><div class="edge"><span class="material-symbols-outlined">visibility</span>そと（人から 見える）</div>${o.layers.map(layer).join('')}<div class="edge body"><span class="material-symbols-outlined">accessibility_new</span>からだ（肌）</div></div></div>
     <div class="fright"><p class="hhead">てもち</p>${PARTY.map((s) => `<div class="hcard${FSEL && FSEL.n === s.name ? ' sel' : ''}" data-n="${s.name}"><img src="${faceUrl(s)}" alt=""><div><b>${s.name}</b><br><small>${s.fib}</small><div class="hs">${o.hand.map((k) => `<span${hi.includes(k) ? ' class="on"' : ''}>${STAT[k]} ${SYM[FIB[s.fib].st[k]]}</span>`).join('')}</div>${at(s.name) ? `<div class="where">${at(s.name)}に いる</div>` : ''}</div></div>`).join('')}</div></div>`;
 }
@@ -2403,7 +2519,7 @@ function openLook(ev, ch) {
       <p style="font-size:14px;margin:10px 0 0"><b>理由</b>：${gl(r.t)}<br>→ ${gl(rLine)}</p>
       ${unheard.length ? `<p style="font-size:14px;margin:10px 0 0"><b>聞いていなかった ようす</b>（旅でわかった。依頼メモに のせた）${unheard.map((x) => `<br>・${gl(x.memo)}`).join('')}</p>` : ''}
       ${q.tries === 1 ? '<p class="sub" style="margin:6px 0 0">旅のあと、聞き込みが もう2つ できる</p>' : ''}
-      ${c2Ready() && !S.ch.done.includes(3) ? '<p class="sub" style="margin:6px 0 0;color:var(--akane)">町の依頼が 2つとも ★2いじょうに なった！ ギルドの ツムギに 報告しよう</p>' : ''}
+      ${c2Ready() && !S.ch.done.includes(3) ? '<p class="sub" style="margin:6px 0 0;color:var(--akane)">町の依頼が 2つ ★2いじょうに なった！ ギルドの ツムギに 報告しよう</p>' : ''}
       ${ng.length ? '<p class="sub" style="margin:6px 0 0">てもちに 合う子が いなければ、地方を 歩いて なかまを さがそう（左下の「入れかえ」で てもちを 入れかえる）</p>' : ''}
       <p style="font-size:14px;margin:10px 0 4px"><b>手帳に1行</b>（わかったこと・次に変えること）</p>
       <textarea id="note" style="width:100%;box-sizing:border-box;height:52px;font:inherit;font-size:14px"></textarea>
@@ -2437,7 +2553,7 @@ const P_REASONS = [
 ];
 const coach = (who, s) => `<div class="coach"><b>${who}</b>「${gl(s)}」</div>`;
 // 1日の道のり：場面を横に並べ、しずくが1つ落ちるごとに次の場面へ
-const SCENE_IC = { '暑い': 'thermostat', '坂道': 'hiking', '岩の道': 'landscape', '雪': 'weather_snowy', '峠の風': 'air', '夕方': 'cabin', '朝': 'wb_twilight', '昼': 'sports_handball', '午後': 'ac_unit', '放課後': 'home', '式': 'event_seat', '写真': 'photo_camera', '食事': 'restaurant', '帰る前': 'hourglass_bottom', '帰り道': 'directions_walk' };
+const SCENE_IC = { '暑い': 'thermostat', '坂道': 'hiking', '岩の道': 'landscape', '雪': 'weather_snowy', '峠の風': 'air', '夕方': 'cabin', '朝': 'wb_twilight', '昼': 'sports_handball', '午後': 'ac_unit', '放課後': 'home', '式': 'event_seat', '写真': 'photo_camera', '食事': 'restaurant', '帰る前': 'hourglass_bottom', '帰り道': 'directions_walk', 'したく': 'checkroom', '屋台': 'icecream', 'おどり': 'music_note', '汗': 'opacity', '花火': 'celebration' };
 function dropClock(st, n, from = n) {
   const N = st.length, cx = 110, cy = 140, R = 82, ang = (i) => (i / N) * 360 - 90, rad = (d) => (d * Math.PI) / 180;
   const pt = (d, r) => [cx + Math.cos(rad(d)) * r, cy + Math.sin(rad(d)) * r].map((v) => v.toFixed(1));
@@ -2483,7 +2599,7 @@ const TOWN_TALK = {
     jo: ['やあ、見習いさん！ ギルドは 大陸の まんなか、大きな 糸まきの そばだよ。'],
     birth: ['センモンが 生まれたんだって？ 綿の センモンなら、この 畑が ふるさとだね。'],
     c1: ['塔へ 行くのかい？ 綿の わたが 糸に なる ところ、よく 見ておいで。'],
-    c2: ['町は 依頼で にぎやかだね。暑い 日の 服なら、綿の 出番さ。'],
+    c2: ['町は 依頼で にぎやかだね。暑い 日の 服なら、綿の 出番さ。', '南の 夏祭りの村は、もうすぐ 夏祭りだよ。やぐらの まわりで おどると、汗びっしょりに なるんだ。'],
     c3a: ['洗い場が 大さわぎだって？ 畑の どろよごれも、洗い方 しだいさ。'],
     c3b: ['洗い方は、表示を 見て 決める。……わしも、これからは そう するよ。'],
     c5: ['ボタンの 取れた 作業着、直してもらえるかい？ 長く 着たいんだ。'],
@@ -2557,7 +2673,7 @@ const TOWN_TALK = {
     jo: ['いらっしゃい、見習いさん！ 糸屋よ。ギルドの 入口は すぐ そこ。'],
     birth: ['糸玉から センモンが？ うちの 糸も、がんばらなくちゃ。'],
     c1: ['塔へ 行くなら、布の つくりを よく 見てきて。'],
-    c2: ['依頼の 服を 仕立てるのね。合う 糸の 色も 相談に のるわよ。'],
+    c2: ['依頼の 服を 仕立てるのね。合う 糸の 色も 相談に のるわよ。', '南西の 夏祭りの村に、ゆかたを 自分で 着てみたい 子が いるって うわさよ。'],
     c3a: ['洗い場、大さわぎね。うちの 店先まで あわが 飛んできたわ。'],
     c3b: ['表示を 見て 洗う。それだけで、服は ずっと 長持ちするのよね。'],
     c5: ['針と 糸の わざ、おぼえたのね！ 糸は 布に 合わせて 選ぶのよ。'],
@@ -2600,8 +2716,8 @@ function npcHint() {
   const c = curCh();
   const t = S.ch.done.includes(7) ? '旅は つづく！ 図鑑・洗い場・依頼の ★3、寄り道を 楽しもう。'
     : c == null ? '次の章は、先生が ひらいたら 始まるよ。それまで 大陸を 歩いて、センモンに 会おう！'
-    : c === 3 ? (!S.p.done ? 'いまは、ギルドの入口の ツムギに 話しかけて、れんしゅうの依頼を 受けよう。' : c2Ready() ? 'いまは、ギルドの ツムギに 報告しよう。町の依頼は 2つとも ★2いじょう！'
-      : `いまは、町の依頼。式典の町の おばあさん（${stars3(S.q.best)}）と 峠の ゆうびん屋さん（${stars3(S.y.best)}）を、どちらも ★2いじょうに しよう。`)
+    : c === 3 ? (!S.p.done ? 'いまは、ギルドの入口の ツムギに 話しかけて、れんしゅうの依頼を 受けよう。' : c2Ready() ? 'いまは、ギルドの ツムギに 報告しよう。町の依頼が 2つ ★2いじょう！'
+      : `いまは、町の依頼。式典の町の おばあさん（${stars3(S.q.best)}）・峠の ゆうびん屋さん（${stars3(S.y.best)}）・夏祭りの村の ヒナタ（${stars3(S.m.best)}）の うち、2つを ★2いじょうに しよう。`)
     : `いまは、${goalLine(c)}。`;   // 第2章の 行き先は renderC2 と 同じ 言い方
   return S.aibo ? { who: aiNm(), t: aiSnd() + t } : { scr: `いま：${t}` };
 }
@@ -2620,6 +2736,7 @@ function talkNear() {
   if (S.nearSpot) return openSpot(S.nearSpot);
   if (S.nearGranny) return openTalk();
   if (S.nearPost) return openYuki();
+  if (S.nearMatsuri) return openMatsuri();
   if (S.nearTsumugi) return openTsumugi();
   if (S.nearNpc) return openNpc(S.nearNpc);
   if (S.near) openCard(S.near.userData.s, true);
@@ -2628,9 +2745,9 @@ function openTsumugiC2() {
   const p = S.p;
   if (p.done) {
     if (c2Ready() && !S.ch.done.includes(3)) return c2End();
-    openSheet(`<h2>ギルド長ツムギ</h2>${say('ツムギ', '町から 依頼が 2つ 来ているよ。式典の町の おばあさんと、峠の ゆうびん屋さん。どちらも ギルドの前で まっている。どちらから でも いいよ。')}
-      ${say('ツムギ', 'どちらも ★2いじょうに なったら、報告に おいで。こまったら、右下の「あそびかた」を 見てごらん。')}
-      <div class="memo"><b>町の依頼</b><br>・お祝いの式（式典の町の おばあさん）　${stars3(S.q.best)}<br>・雪の峠（峠の ゆうびん屋さん）　${stars3(S.y.best)}</div>
+    openSheet(`<h2>ギルド長ツムギ</h2>${say('ツムギ', '町から 依頼が 3つ 来ているよ。式典の町の おばあさんと、峠の ゆうびん屋さんは ギルドの前。夏祭りの村の ヒナタは、南西の 村で まっている。どれから でも いいよ。')}
+      ${say('ツムギ', '3つの うち 2つが ★2いじょうに なったら、報告に おいで。こまったら、右下の「あそびかた」を 見てごらん。')}
+      <div class="memo"><b>町の依頼</b>（3つの うち 2つを ★2いじょうに）<br>・お祝いの式（式典の町の おばあさん）　${stars3(S.q.best)}<br>・雪の峠（峠の ゆうびん屋さん）　${stars3(S.y.best)}<br>・夏祭りの村（夏祭りの村の ヒナタ）　${stars3(S.m.best)}</div>
       <div class="row"><button id="bHelp">あそびかた</button><button class="main" id="bClose">とじる</button></div>`);
     $('#bHelp').onclick = () => openHelp(0); $('#bClose').onclick = closeSheet; return;
   }
@@ -2732,7 +2849,7 @@ function openPLook(st) {
     <p style="font-size:14px;margin:10px 0 0"><b>理由</b>：${gl(r.t)}<br>→ ${gl(rLine)}</p>
     ${fin ? say('ツムギ', 'よくできたね。場面を 思いうかべて 選べたね。これで 一人前への 第一歩。') + say('ツムギ', 'さあ、町の依頼も 受けられるよ。ギルドの前の道に、こまっている おばあさんが いるみたい。町の依頼では、★のほかに、依頼人の 気持ちに よりそえたかも 見るよ。') : ''}
     <div class="row">${fin ? '<button class="main" id="bDone">町の依頼へ</button>' : '<button class="main" id="bRe">直して もう一度</button>'}<button id="bClose">とじる</button></div>`);
-  if (fin) $('#bDone').onclick = () => { p.done = true; renderQuest(); closeSheet(); saveGame(); toast('町の依頼が 2つ 受けられるように なった！（お祝いの式・雪の峠）'); };
+  if (fin) $('#bDone').onclick = () => { p.done = true; renderQuest(); closeSheet(); saveGame(); toast('町の依頼が 3つ 受けられるように なった！（お祝いの式・雪の峠・夏祭りの村）'); };
   else $('#bRe').onclick = openPForm;
   $('#bClose').onclick = closeSheet;
 }
@@ -2747,12 +2864,12 @@ const HELP = [
   { h: 'なかまと てもち', who: 'ピンコ', say: 'チクッ！ 地方を 歩くと、センモンに 出会えるよ。話しかけて、なかまに しよう！',
     body: '<ul><li>植物の平原＝綿・麻／動物の高原＝毛・絹／化学の都＝合成の4つ</li><li>話しかけると、センモンから 2つの 問い（なかまの しるし）。教科書の 表1を 見て 答えると、なかまに なる</li><li>なかまに なると、図鑑に のって、旅に ついてくる</li><li>てもちは 4体まで。あふれた子は あずかり所へ</li><li>左下の「入れかえ」で、依頼に 合わせて 入れかえる。合う子が いなければ、さがしに 行こう</li></ul>' },
   { h: '依頼の 進め方', who: 'ツムギ', say: '依頼は、いつも この4つの順に 進むよ。右上の「依頼」の欄に、いまの段階が 赤い字で 出る。',
-    body: '<p class="flow">① 聞き込み → ② フォーメーション → ③ 旅 → ④ ふりかえり　→（直して もう一度）</p><ul><li>うまくいかなくても、何度でも 直せる</li><li>右下の「フォーメーション」ボタンからも、組み方の画面を ひらける</li></ul>' },
+    body: '<p class="flow">① 聞き込み → ② フォーメーション → ③ 旅 → ④ ふりかえり　→（直して もう一度）</p><ul><li>うまくいかなくても、何度でも 直せる</li><li>第2章の 町の依頼は 3つ（お祝いの式・雪の峠・夏祭りの村）。どれか 2つを ★2いじょうに すると、ギルドの ツムギに 報告できる</li><li>夏祭りの村の 依頼では、フォーメーションの 前に、ゆかたの 着方（合わせ方）を たしかめる</li><li>右下の「フォーメーション」ボタンからも、組み方の画面を ひらける</li></ul>' },
   { h: '① 聞き込み', who: 'ツムギ', say: '聞ける数は 決まっている。何を 聞くか、よく えらぼう。',
     body: '<ul><li>「ようす」：その日の 予定や 場所。どんな能力が 要るかが 分かる</li><li>「気持ち」：依頼人の 心配や、大事にしているもの</li><li>聞いたことは「依頼メモ」に のる</li><li>聞けなかったことは、旅で 分かることも ある</li></ul>' },
   { h: '② フォーメーション', who: 'メジャ丸', say: 'シュルルッ……センモンを 布の 欄に 置いて、服を 仕立てるよ！',
     body: `<div class="hdemo"><div class="hd-t"></div><div class="board demo"><div class="edge"><span class="material-symbols-outlined">visibility</span>そと（人から 見える）</div>${[['外側', '上着など'], ['まん中', 'セーターなど'], ['肌側', '肌着など']].map(([n, w]) => `<div class="layer"><div class="lhead"><b>${n}</b>　${w}</div><div class="band"><div class="cell main"><span class="pct">65%</span><span>おもな センモン</span></div><div class="cell mix"><span class="pct">35%</span><span>まぜる センモン</span></div></div></div>`).join('')}<div class="edge body"><span class="material-symbols-outlined">accessibility_new</span>からだ（肌）</div></div></div>
-      <ul><li>服（トルソー）：外側＝上着、肌側＝肌着。えらんだ 服が 点滅する。服を タップしても えらべる</li><li>重ね着：肌に ふれる 肌側の布から、上へ 布を 重ねる。依頼によって、使う 布が ちがう</li><li>混用：1まいの布に、2つの センモンを まぜる。おもな センモンが 65%・まぜる センモンが 35%（色の はば）。まぜると、おもな センモンの 苦手が 1段 上がる</li><li>置き方：てもちを タップ → 布の 欄を タップ。×で はずす</li><li>◎○△ は 表1の記号。布の下に、この依頼で 見る所と タグが 出る</li><li>最後に、組み方の 理由を 1つ えらぶ</li></ul>` },
+      <ul><li>服（トルソー）：外側＝上着（ゆかたの 依頼では ゆかた）、肌側＝肌着。えらんだ 服が 点滅する。服を タップしても えらべる</li><li>重ね着：肌に ふれる 肌側の布から、上へ 布を 重ねる。依頼によって、使う 布が ちがう</li><li>混用：1まいの布に、2つの センモンを まぜる。おもな センモンが 65%・まぜる センモンが 35%（色の はば）。まぜると、おもな センモンの 苦手が 1段 上がる</li><li>置き方：てもちを タップ → 布の 欄を タップ。×で はずす</li><li>◎○△ は 表1の記号。布の下に、この依頼で 見る所と タグが 出る</li><li>最後に、組み方の 理由を 1つ えらぶ</li></ul>` },
   { h: '③ 旅（しずく時計）', who: 'アイロ', say: 'シュー……しずく時計は、ギルドの ふしぎな時計。しずくが 1つ 落ちるたびに、1日の時間が 少し 進むんだ。',
     track: [{ short: '朝' }, { short: '昼' }, { short: '午後' }, { short: '放課後' }],
     body: '<ul><li>上の 雲から しずくが 落ちると、時計の 場面が 1つ 水で みたされ、縫い針の 針が 次の場面へ 進む</li><li>「しずくを落とす」を おすたびに、つぎの場面へ</li><li>場面ごとに、依頼人の ねがいに「合っている」か「まだ」かが 出る</li><li>町の依頼では、とちゅうの 出来事で、依頼人の 行動を えらぶ</li></ul>' },
@@ -2989,7 +3106,7 @@ function readSave() { return SAVE_CUR; }   // 起動の ときに サーバー�
 function buildSave() {
   return { v: 3, name: S.name, at: Date.now(), party: PARTY.map((x) => x.name), box: S.box.map((x) => x.name), met: [...S.met],
     q: S.q, p: S.p, form: S.form, pform: S.pform, dressed: S.dressed, pos: [+player.position.x.toFixed(2), +player.position.z.toFixed(2)],
-    y: S.y, yform: S.yform, ydressed: S.ydressed, sent: S.sent,
+    y: S.y, yform: S.yform, ydressed: S.ydressed, m: S.m, mform: S.mform, mdressed: S.mdressed, sent: S.sent,
     ch: S.ch, story: S.story, buttons: S.buttons, nazo: S.nazo, items: S.items, aibo: S.aibo, reflect: S.reflect, dirt: S.dirt, mine: S.mine && S.mine !== ALL_SENMON[0] && !S.mine.sample ? { name: S.mine.name, fib: S.mine.fib, hue: S.mine.hue } : (S.mine ? 'sample' : null) };
 }
 // この パソコンにも とっておく（送れなかった 書いたものも いっしょに）
@@ -3082,7 +3199,10 @@ function applySave(d) {
   S.dressed = d.dressed || null; if (S.dressed) dressGranny();
   if (d.y) Object.assign(S.y, d.y);
   if (d.yform) ['out', 'mid', 'skin'].forEach((k) => { if (d.yform[k]) S.yform[k] = d.yform[k]; });
-  S.ydressed = d.ydressed || null; dressPost(); updTsuSign(); applyClass();
+  S.ydressed = d.ydressed || null; dressPost();
+  if (d.m) Object.assign(S.m, d.m);
+  if (d.mform) ['out', 'mid', 'skin'].forEach((k) => { if (d.mform[k]) S.mform[k] = d.mform[k]; });
+  S.mdressed = d.mdressed || null; dressMatsuri(); updTsuSign(); applyClass();
   // 第1章が できる前の きろく：第2章に もう 入っていたら、第1章は おえた ことに する（とちゅうで 前の章へ もどさない）
   if (d.v !== 1 && (!d.story || !d.story.c1) && S.ch.open >= 3 && !S.ch.done.includes(2) && S.p.started) { S.ch.done.push(2); S.story.c1 = 'done'; }
   renderHud(); renderQuest();
@@ -3092,8 +3212,8 @@ function saveLine(d) {
   if (d.ch && d.ch.done && d.ch.done.includes(7)) return `<b>${esc(d.name)}</b> さんの きろく<br>旅を おえた（一人前の 仕立て屋）<br>印 ${(d.buttons || []).length}/6・図鑑 ${d.met.length}/${dexList().length}<br><small>さいごに あそんだ日：${t.getMonth() + 1}月${t.getDate()}日 ${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}</small>`;
   const ch = d.ch || { open: 3, done: [0, 1, 2] }, cc = READY_CH.find((i) => i <= ch.open && !ch.done.includes(i)), bn = d.v === 1 ? 2 : (d.buttons || []).length;
   if (cc !== 3) return `<b>${esc(d.name)}</b> さんの きろく<br>${cc == null ? '次の章を まっている' : `${CH[cc].name}「${CH[cc].title}」の とちゅう`}<br>印 ${bn}/6・図鑑 ${d.met.length}/${dexList().length}<br><small>さいごに あそんだ日：${t.getMonth() + 1}月${t.getDate()}日 ${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}</small>`;
-  const y = d.y || {}, sb = (b) => `${'★'.repeat(b || 0)}${'☆'.repeat(3 - (b || 0))}`;
-  if (p.done) return `<b>${esc(d.name)}</b> さんの きろく<br>${CH[3].name}「${CH[3].title}」：お祝いの式 ${sb(q.best)}・雪の峠 ${sb(y.best)}<br>印 ${bn}/6・なかま ${d.party.length + d.box.length}体・図鑑 ${d.met.length}/${dexList().length}<br><small>さいごに あそんだ日：${t.getMonth() + 1}月${t.getDate()}日 ${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}</small>`;
+  const y = d.y || {}, m = d.m || {}, sb = (b) => `${'★'.repeat(b || 0)}${'☆'.repeat(3 - (b || 0))}`;
+  if (p.done) return `<b>${esc(d.name)}</b> さんの きろく<br>${CH[3].name}「${CH[3].title}」：お祝いの式 ${sb(q.best)}・雪の峠 ${sb(y.best)}・夏祭りの村 ${sb(m.best)}<br>印 ${bn}/6・なかま ${d.party.length + d.box.length}体・図鑑 ${d.met.length}/${dexList().length}<br><small>さいごに あそんだ日：${t.getMonth() + 1}月${t.getDate()}日 ${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}</small>`;
   const prog = !p.done ? (p.best ? `れんしゅうの依頼 ${'★'.repeat(p.best)}${'☆'.repeat(3 - p.best)}` : 'れんしゅうの依頼の とちゅう') : q.done ? `町の依頼「お祝いの式」達成 ${'★'.repeat(q.best)}` : q.best ? `町の依頼「お祝いの式」 ${'★'.repeat(q.best)}${'☆'.repeat(3 - q.best)}` : '町の依頼「お祝いの式」の とちゅう';
   return `<b>${esc(d.name)}</b> さんの きろく<br>${prog}<br>印 ${bn}/6・なかま ${d.party.length + d.box.length}体・図鑑 ${d.met.length}/${dexList().length}<br><small>さいごに あそんだ日：${t.getMonth() + 1}月${t.getDate()}日 ${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}</small>`;
 }
@@ -3150,7 +3270,7 @@ const TAIKEN_CH = [
   { k: 'birth', ch: 1, ic: 'egg', t: 'センモン誕生', when: '第2時', min: 5, learn: '担当の 繊維・名前・色を 決めて、自分の センモンを 生む' },
   { k: 'c1', ch: 2, ic: 'castle', t: '第1章「糸と布の塔」', when: '第3時', min: 10, learn: '繊維 → 糸 → 布（織物・編物・不織布）と、混用（合体）' },
   { k: 'c2p', ch: 3, ic: 'school', t: '第2章 れんしゅう「真夏の学校の肌着」', when: '第4時', min: 5, learn: '聞き込み → フォーメーション → 旅 → ふりかえり の 進め方' },
-  { k: 'c2', ch: 3, ic: 'checkroom', t: '第2章 町の依頼（お祝いの式・雪の峠）', when: '第4時', min: 15, learn: '着る人の ねがいと 場面に 合わせ、重ね着と 混用で 服を 仕立てる' },
+  { k: 'c2', ch: 3, ic: 'checkroom', t: '第2章 町の依頼（お祝いの式・雪の峠・夏祭りの村）', when: '第4時', min: 15, learn: '着る人の ねがいと 場面に 合わせ、重ね着と 混用で 服を 仕立てる。和服（ゆかた）の 着方も' },
   { k: 'c3', ch: 4, ic: 'local_laundry_service', t: '第3章「ヨゴレンのいたずら」', when: '第5時', min: 15, learn: '取扱い表示を 読んで 洗う・推理の 時間' },
   { k: 'c5', ch: 5, ic: 'content_cut', t: '針と糸のわざ', when: '基礎縫いの あと', min: 5, learn: 'ほつれ・ボタン・すそを、合う 縫い方で 直す' },
   { k: 'c6', ch: 6, ic: 'workspace_premium', t: '終章「一人前の試験」', when: '第8(9)時', min: 10, learn: 'キットを 繊維の 知識で 読み解き、装備カードを つくる' },
@@ -3282,6 +3402,7 @@ const SPOTS = {   // 序章で 歩いて 行く所（赤い ！）
 };
 const TOWER = { x: 20, z: -22 };
 const WASH = { x: 11, z: -3 };   // ギルドの洗い場（第3章）
+const MURA = { x: -24, z: 28.5, r: 9 };   // 夏祭りの村（第2章 ゆかたの依頼）
 // いま 行ける 物語の場所（序章の 場面・第1章の 塔と 峠。第1章の あとも、塔の 合体の 実験台は 使える）
 function spotKey() {
   const c = curCh();
@@ -3332,6 +3453,8 @@ function newGameState() {
   Object.assign(S, { box: [], met: new Set(), mine: null, aibo: null, ch: { open: 0, done: [], seen: 0 }, story: { jo: 'greet', birth: 'wait', c1: 'start', c2act: 'iwai', c3: 'start', w: [] }, buttons: [], nazo: [], items: [], reflect: {}, dirt: {} });
   Object.assign(S.y, { stage: 0, asked: [], found: [], reason: null, tries: 0, best: 0, done: false, notes: [], checked: false, guess: null, keep: 0, hearts: 0 });
   S.yform = { out: [null, null], mid: [null, null], skin: [null, null] }; S.ydressed = null;
+  Object.assign(S.m, { stage: 0, asked: [], found: [], reason: null, tries: 0, best: 0, done: false, notes: [], kitsuke: false, awase: null, miss: 0, keep: 0, hearts: 0 });
+  S.mform = { out: [null, null], mid: [null, null], skin: [null, null] }; S.mdressed = null;
   Object.assign(S.q, { stage: 0, asked: [], found: [], reason: null, tries: 0, best: 0, done: false, notes: [], clues: [], appraised: false, guess: null, keep: 0, hearts: 0 });
   Object.assign(S.p, { started: false, stage: 0, asked: [], reason: null, tries: 0, best: 0, done: false });
   S.form = { out: [null, null], mid: [null, null], skin: [null, null] }; S.pform = [null, null]; S.dressed = null;
@@ -3345,8 +3468,9 @@ function goalSpot() {
   if (c === 2) { const k = S.story.c1; return k === 'tower' || k === 'touge' ? SPOTS[k] : k === 'done' ? null : tsu; }
   if (c === 3) {
     if (!S.p.done || c2Ready()) return tsu;
-    const g = { x: GRANNY_SPOT[0], z: GRANNY_SPOT[2], y: 4.3 }, pp = { x: POST_SPOT[0], z: POST_SPOT[2], y: 4.3 };
-    return S.story.c2act === 'yuki' ? (S.y.best < 2 ? pp : g) : (S.q.best < 2 ? g : pp);
+    const T = C2Q(), at = (a) => ({ x: T[a].spot[0], z: T[a].spot[2], y: a === 'matsuri' ? 4.0 : 4.3 });
+    if (T[S.story.c2act] && T[S.story.c2act].Q.best < 2) return at(S.story.c2act);
+    const nx = ['iwai', 'yuki', 'matsuri'].find((a) => T[a].Q.best < 2); return nx ? at(nx) : tsu;
   }
   if (c === 4) return C3_AT_WASH.includes(S.story.c3) ? SPOTS.arai : S.story.c3 === 'done' ? null : tsu;
   if (c === 5 || c === 6) return tsu;
@@ -3370,8 +3494,8 @@ function goalLine(c) {
   if (c === 1) return 'ギルドの入口の ツムギに 話しかけて、糸玉から センモンを 生まれさせよう';
   if (c === 2) return C1_GOAL[S.story.c1] || '';
   if (c === 3) return !S.p.done ? 'ギルドの入口の ツムギに 話しかけて、れんしゅうの依頼を 受けよう'
-    : c2Ready() ? '2つとも ★2いじょう！ ギルドの ツムギに 報告しよう'
-    : '町の依頼：式典の町の おばあさん・峠の ゆうびん屋さんに 話しかけよう（赤い ！）';
+    : c2Ready() ? '町の依頼が 2つ ★2いじょう！ ギルドの ツムギに 報告しよう'
+    : '町の依頼：おばあさん・ゆうびん屋さん・夏祭りの村の ヒナタの うち、2人の 依頼を ★2いじょうに しよう（赤い ！）';
   if (c === 4) return C3_GOAL[S.story.c3] || '';
   if (c === 5) return C5_GOAL[S.story.c5 || 'start'] || '';
   if (c === 6) return C6_GOAL[S.story.c6 || 'start'] || '';
@@ -3396,7 +3520,7 @@ function lnHtml(l, isNew) {
   return `<p class="ln${nw}" style="--c:${WHO_C[l.who] || 'var(--ai)'}"><b>${who}</b>「${gl(fill(l.t))}」</p>`;
 }
 // 話している人の しるし：センモンは 顔、相棒は 道具の しるし、人は 名前の 1文字（新しい アイコンは 描かない）
-const WHO_PT = { 'ツムギ': 'tsumugi', 'ギルド長ツムギ': 'tsumugi', 'マトイ': 'matoi', 'ボロン': 'boron', '式典の町のおばあさん': 'granny', 'おばあさん': 'granny', '峠の ゆうびん屋さん': 'post', 'ゆうびん屋さん': 'post' };
+const WHO_PT = { 'ツムギ': 'tsumugi', 'ギルド長ツムギ': 'tsumugi', 'マトイ': 'matoi', 'ボロン': 'boron', '式典の町のおばあさん': 'granny', 'おばあさん': 'granny', '峠の ゆうびん屋さん': 'post', 'ゆうびん屋さん': 'post', '夏祭りの村の ヒナタ': 'matsuri', 'ヒナタ': 'matsuri' };
 const ptImg = (k, bg) => (PORTRAIT[k] ? `<img class="bdg pt" src="${PORTRAIT[k]}" alt="" style="background:${bg}">` : '');
 function badgeHtml(l) {
   if (l.who === 'me') return ptImg('me', '#dbe8f5') || '<span class="bdg" style="background:#5f8fc0"><span class="material-symbols-outlined">person</span></span>';
@@ -3648,9 +3772,10 @@ const CH_LEARN = [
 function endChapter(c) {
   if (!S.ch.done.includes(c)) S.ch.done.push(c);
   const nx = curCh(), nextName = CH[c + 1] ? `${CH[c + 1].name}「${CH[c + 1].title}」` : '';
+  const learn = (CH_LEARN[c] || []).concat(c === 3 && S.m.kitsuke ? ['和服（ゆかた）は 右前に 着る。着る人の 右の 身ごろを 先に 合わせ、左の 身ごろを 上に 重ねる'] : []);   // 夏祭りの村の 依頼で 着方を たしかめた 人だけ
   renderQuest(); saveGame();
   openSheet(`<h2>${CH[c].name}「${CH[c].title}」　おわり</h2><div class="endcard"><p class="big">${CH[c].name} おわり</p>
-    ${CH_LEARN[c] ? `<ul>${CH_LEARN[c].map((x) => `<li>${gl(x)}</li>`).join('')}</ul>` : ''}<p class="sub" style="margin:6px 0 2px">ギルドの印</p>${marksHtml(true)}
+    ${learn.length ? `<ul>${learn.map((x) => `<li>${gl(x)}</li>`).join('')}</ul>` : ''}<p class="sub" style="margin:6px 0 2px">ギルドの印</p>${marksHtml(true)}
     <p class="next">${nx != null ? `次は ${CH[nx].name}「${CH[nx].title}」。右上の「いま」を 見て 進もう` : `次は ${nextName}。先生が 章を ひらくまで、大陸を 歩いて みよう${S.mine ? '（センモンに 話しかけると、なかまに できる）' : ''}`}</p></div>
     ${TAIKEN ? `<p class="tkEnd">体験の おわり。ほかの 章も えらべます${c < 7 ? '（このまま 次の 章へ 進むことも できます）' : ''}</p>` : ''}
     <div class="row">${TAIKEN ? '<button id="bTk">章選びへ</button>' : ''}<button id="bNote">手帳を 見る</button><button class="main" id="bClose">${TAIKEN ? 'つづけて 遊ぶ' : 'とじる'}</button></div>`);
@@ -4212,7 +4337,7 @@ function openYLook(ev, ch) {
       ${unheard.length ? `<p style="font-size:14px;margin:10px 0 0"><b>聞いていなかった ようす</b>（旅で わかった。依頼メモに のせた）${unheard.map((x) => `<br>・${gl(x.memo)}`).join('')}</p>` : ''}
       ${y.tries === 1 ? '<p class="sub" style="margin:6px 0 0">旅の あと、聞き込みが もう2つ できる</p>' : ''}
       ${ng.length ? '<p class="sub" style="margin:6px 0 0">てもちに 合う子が いなければ、地方を 歩いて なかまを さがそう（左下の「入れかえ」で てもちを 入れかえる）</p>' : ''}
-      ${c2Ready() && !S.ch.done.includes(3) ? '<p class="sub" style="margin:6px 0 0;color:var(--akane)">町の依頼が 2つとも ★2いじょうに なった！ ギルドの ツムギに 報告しよう</p>' : ''}
+      ${c2Ready() && !S.ch.done.includes(3) ? '<p class="sub" style="margin:6px 0 0;color:var(--akane)">町の依頼が 2つ ★2いじょうに なった！ ギルドの ツムギに 報告しよう</p>' : ''}
       <p style="font-size:14px;margin:10px 0 4px"><b>手帳に1行</b>（わかったこと・次に変えること）</p>
       <textarea id="note" style="width:100%;box-sizing:border-box;height:52px;font:inherit;font-size:14px"></textarea>
       ${y.notes.length ? `<p class="sub" style="margin:4px 0 0">これまでの手帳：${y.notes.map(esc).join('／')}</p>` : ''}
@@ -4222,10 +4347,208 @@ function openYLook(ev, ch) {
   };
   draw();
 }
-// 第2章の おわり：2つの 町の依頼が ★2いじょう → ③ 装いのボタン
+/* ----- 第2章 ゆかたの依頼「夏祭りの村」（第4時。台本 会話/依頼-夏祭りの村.md。2026-10-25）
+   衣服の はたらき：社会生活上（慣習・生活文化）＝和服。暑い 夏の 夕方から 夜の 祭り（すわる・おどって 汗・夜の 川風）。
+   外側＝ゆかた・肌側＝肌着（まん中は 使わない）。フォーメーションの 前に、ゆかたの 合わせ方（右前）を たしかめる。
+   まちがえても 答えは 言わず、衿の 重なりを 見る 手がかりだけ。左前の わけは「ふだんは 着ない 決まり」まで（明るい 世界） ----- */
+const MQ = { name: '夏祭りの村', who: '夏祭りの村の ヒナタ', memo0: '自分で ゆかたを 着て、友だちと 夏祭りへ 行きたい' };
+const M_OPEN = ['ギルドの 仕立て屋さん？ こんにちは！ こんどの 夏祭りに、友だちと ゆかたで 行く 約束を したんだ。', 'おばあちゃんの むかしの ゆかたで 着る れんしゅうを してたけど、もう 小さくて 着られなくて……。ゆかたを 仕立ててほしいんだ。'];
+const M_ASKS = [
+  { id: 'hot', kind: 'ようす', ask: '夏祭りの 日は、どんな 天気？', ans: '夕方に なっても まだ 暑くて、むしむし してるんだ。', memo: '夕方でも まだ 暑い' },
+  { id: 'yatai', kind: 'ようす', ask: '祭りでは、何を するの？', ans: '屋台を 回って、ベンチに すわって かき氷を 食べるよ。すわったり 立ったり、何回も するんだ。', memo: '屋台の ベンチに、何回も すわる' },
+  { id: 'odori', kind: 'ようす', ask: '盆おどりも おどるの？', ans: 'うん！ やぐらの まわりで、みんなで おどるよ。おどると、汗びっしょりに なるんだ。', memo: '盆おどりで、汗びっしょりに なる' },
+  { id: 'hanabi', kind: 'ようす', ask: '祭りの さいごは？', ans: '川原で 花火を 見るんだ。夜は 川の 風が ふいて、汗が ひえると ちょっと 寒いんだよね。', memo: '夜の 川原で 花火。風で 汗が ひえる' },
+  { id: 'self', kind: '気持ち', ask: 'どうして、自分で 着たいの？', ans: '去年までは、おばあちゃんに 着せてもらってたんだ。ことしは 自分で 着て、友だちと 行きたいんだ。', memo: 'ことしは、自分で ゆかたを 着て 行きたい（気持ち）' },
+  { id: 'baa', kind: '気持ち', ask: 'おばあちゃんの ゆかた、大事な ものなの？', ans: 'おばあちゃんが 子どもの ころ、はじめての 夏祭りで 着た ゆかたなんだって。もう 着られないけど、いっしょに 祭りへ 連れていけたら いいな。', memo: 'おばあちゃんの ゆかたを、いっしょに 連れていきたい（気持ち）' },
+];
+const M_ASK_BASE = 4, M_ASK_MORE = 2, mAskMax = () => M_ASK_BASE + (S.m.tries > 0 ? M_ASK_MORE : 0);
+const M_REASONS = [
+  { t: '外側に、あたたかさの ひかえめな センモンを 置いた（夕方でも 暑いから）', wish: 'hot' },
+  { t: '外側に、しわに強い センモンを 置いた（屋台の ベンチに 何回も すわるから）', wish: 'yatai' },
+  { t: '肌側に、汗を吸う センモンを 置いた（盆おどりで 汗を かくから）', wish: 'odori' },
+  { t: '肌側に、乾きやすい センモンを まぜた（夜風で 汗が ひえないように）', wish: 'hanabi' },
+  { t: '外側に、あたたかい センモンを 置いた（夜の 川原は 少し 寒いから）', wish: null, why: '夏の 夜に こまるのは、汗が ひえる こと。外側の あたたかさは、ひかえめな ほうが いい' },
+];
+const M_KEEP = ['生かさない', 'きんちゃく袋に 仕立て直す（祭りに 持っていける）', 'ハンカチに 仕立て直す（汗を ふける）'];
+const M_PAINT = { out: 'hsl(214,42%,62%)', skin: '#fbf6ea' };   // 着方を たしかめる 絵：おばあちゃんの ゆかた（藍の 色）と 白い 肌着
+function mEval() {
+  const pick = (k, i) => (S.mform[k][i] ? byName(S.mform[k][i]) : null), up = (v) => Math.min(3, v + 1), notes = [];
+  const oL = pick('out', 0), oR = pick('out', 1), sL = pick('skin', 0), sR = pick('skin', 1);
+  const st = (L, R, k) => (L ? mixStat(L.fib, R && R.fib, k) : 0);
+  const owarm = st(oL, oR, 4), wrinkle = st(oL, oR, 1);
+  let sweat = st(sL, sR, 2); if (sL && sL.fib === '綿') { sweat = up(sweat); notes.push(`${sL.name}（綿）の わざ【汗とり】：肌側の おもな センモンに 置くと、汗を吸う が もう1段`); }
+  const sdry = st(sL, sR, 3), poly = [sL, sR].find((x) => x && x.fib === 'ポリエステル'), asa = [sL, sR].find((x) => x && x.fib === '麻');
+  if (poly) notes.push(`${poly.name}（ポリエステル）の わざ【速乾】：旅の時間で 重くならない`);
+  if (asa) notes.push(`${asa.name}（麻）の わざ【さらり】：暑い場所の肌側で、困る声を 1つ 消す`);
+  const hikari = !!(oL && oL.fib === '絹'); if (hikari) notes.push(`${oL.name}（絹）の わざ【ひかり】：祭りで、ゆかたの 光沢が 映える（ただし 絹は こすれに 弱い）`);
+  [[oL, oR, '外側'], [sL, sR, '肌側']].forEach(([L, R, n]) => { if (L && R) notes.push(`${n}は 混用の布（まぜると、おもな センモンの 苦手が 1段 上がる。上がった所は △→○ のように 出る）`); });
+  return { oL, oR, sL, sR, owarm, wrinkle, sweat, sdry, quick: !!poly, sarari: !!asa, hikari, notes };
+}
+// 旅：4つの場面（★に効く）と、1つの出来事（ヒナタの 行動を 選ぶ）、さいごに 帰り道
+function mSteps(ev, ch) {
+  const W = (x, m3, m2, m1) => (x >= 3 ? m3 : x === 2 ? m2 : m1), fan = ch.fan === 1, byWear = fan && ev.sweat < 2;
+  const sc = [
+    { id: 'hot', short: 'したく', name: '夕方　ゆかたを 着て 出かける（まだ 暑い）', see: '外側の「あたたかさ」（夏なので、高すぎないか）', ok: !!ev.oL && ev.owarm <= 2,
+      msg: !ev.oL ? 'ゆかたが ないよ……' : ev.owarm <= 2 ? `右前で 着られた！ 夕方でも、ゆかたが すずしいよ。${ev.hikari ? '光沢も あって、祭りらしい！' : ''}` : '右前で 着られたけど、ゆかたが 暑くて、もう 汗が 出てきた……',
+      hint: '真夏の 夕方。外側の「あたたかさ」を見よう（高すぎないか）', lack: '外側の「あたたかさ」が まだ 高すぎる' },
+    { id: 'yatai', short: '屋台', name: '屋台　ベンチに すわって かき氷', see: '外側の「しわに強い」', ok: ev.wrinkle >= 2,
+      msg: W(ev.wrinkle, '何回 すわっても、ゆかたは しわ ひとつ ないよ。', '少し しわが できたけど、目立たないね。', ev.oL ? '立ち上がったら、ゆかたが しわしわ……' : 'ゆかたが ないよ……'),
+      hint: '外側の「しわに強い」を見よう' },
+    { ev: 'fan', short: 'おどり', name: '出来事　盆おどりの 輪で', q: 'やぐらの まわりで、盆おどりが 始まった。おどっていると、汗が どんどん 出てきた！　ヒナタは どうする？',
+      opts: ['そのまま おどりつづける', 'ときどき 輪を ぬけて、うちわで あおぐ'], res: (c) => (c === 1 ? 'ときどき 輪を ぬけて、うちわで あおいだよ。風が 気持ちいい！' : 'そのまま、さいごまで おどりつづけたよ！') },
+    { id: 'odori', short: '汗', name: '盆おどり　汗びっしょり', see: '肌側の「汗を吸う」', ok: ev.sweat >= 2 || fan, byWear,
+      msg: ev.sweat >= 3 ? '汗を すって、肌着が さらっと しているよ。' : ev.sweat === 2 ? '少し べたつくけど、だいじょうぶ。' : byWear ? 'うちわで あおいだから、汗は そんなに かかずに すんだよ。' : ev.sL ? '汗で、肌着が べたべた……' : '肌着が ないよ……',
+      hint: '肌側の「汗を吸う」を見よう。とちゅうの 行動でも かわるかも' },
+    { id: 'hanabi', short: '花火', name: '夜　川原で 花火（川の 風）', see: '肌側の「乾きやすい」', ok: ev.sdry >= 2 || ev.quick,
+      msg: ev.quick || ev.sdry >= 3 ? '汗が すぐ 乾いて、川の 風が 気持ちいい！ 花火、きれいだね。' : ev.sdry === 2 ? '汗が 乾いてきて、ひえずに 花火を 見られたよ。' : ev.sL ? '汗が 乾かなくて、川の 風で ひえてきた……' : '肌着が ないよ……',
+      hint: '肌側の「乾きやすい」を見よう（まぜた布は、苦手が 1段 上がる）' },
+  ];
+  if (ev.sarari) { const s = sc.find((x) => (x.id === 'hot' || x.id === 'odori') && !x.ok); if (s) Object.assign(s, { ok: true, byWaza: true, msg: '麻の【さらり】で、さらっとして 暑さが 気にならなかったよ！' }); }
+  return [...sc, { narr: true, short: '帰り道', name: '帰り道　ちょうちんの 下を 歩いて 帰る', scr: 'ゆかたの そでに、屋台の ソースが ぽつんと ついていた', say: 'たのしかった！ でも、そでに ソースが ついちゃった。あとで 洗わなくちゃ。' }];
+}
+function openMatsuri() {
+  S.story.c2act = 'matsuri';
+  if (S.ch.open < 3) {
+    openSheet(`<h2>${MQ.who}</h2>${say('ヒナタ', ({ birth: 'センモンが 生まれたって ほんと？ 夏祭りの村にも、見せに 来てね！', c1: 'もうすぐ 夏祭り！ いま、やぐらを 組んで、ちょうちんを つるしてるんだ。' })[npcPhase()] || 'こんにちは！ 夏祭りの村の ヒナタだよ。祭りの 日は、村じゅう ちょうちんで 明るいんだ。')}<div class="row"><button class="main" id="bClose">とじる</button></div>`);
+    $('#bClose').onclick = closeSheet; $('#bClose').focus(); return;
+  }
+  if (!S.p.done) {
+    openSheet(`<h2>${MQ.who}</h2>${say('ヒナタ', 'あっ、ギルドの 見習いさん？ まずは ギルドで、ギルド長の れんしゅうを 受けてきてね。')}<div class="row"><button id="bSkip">れんしゅうを とばす（先生用）</button><button class="main" id="bClose">とじる</button></div>`);
+    $('#bSkip').onclick = () => { S.p.done = true; renderQuest(); openMatsuri(); }; $('#bClose').onclick = closeSheet; $('#bClose').focus(); return;
+  }
+  renderQuest(); openMTalk();
+}
+function openMTalk() {
+  const m = S.m, max = mAskMax(), left = max - m.asked.length; S.story.c2act = 'matsuri'; renderQuest();
+  openSheet(`<h2>${MQ.who}</h2><p class="sub">① 聞き込み：聞けるのは ${max}つまで（あと ${left}つ）。「ようす」と「気持ち」から 選ぶ。聞いたことは 依頼メモに のる</p>
+    ${(m.asked.length || m.kitsuke ? M_OPEN.slice(1) : M_OPEN).map((x) => say('ヒナタ', x)).join('')}
+    ${M_ASKS.filter((x) => m.asked.includes(x.id)).map((x) => `<p class="ask">${me()}「${x.ask}」<br><span class="voice">ヒナタ「${gl(x.ans)}」</span></p>`).join('')}
+    ${['ようす', '気持ち'].map((kind) => { const rest = M_ASKS.filter((x) => x.kind === kind && !m.asked.includes(x.id)); return rest.length ? `<p class="kind">${kind}を 聞く</p><div class="asks">${rest.map((x) => `<button data-a="${x.id}"${left ? '' : ' disabled'}>${x.ask}</button>`).join('')}</div>` : ''; }).join('')}
+    ${left ? '' : `<p class="sub" style="margin-top:6px">もう 聞けない。${m.tries ? '' : '聞けなかった ことは、旅で たしかめよう（旅の あと、もう2つ 聞ける）'}</p>`}
+    <div class="row"><button class="main" id="bNext">${m.kitsuke ? '② フォーメーションへ' : 'つぎへ：ゆかたの 着方を たしかめる'}</button><button id="bClose">とじる</button></div>`);
+  $('#sheet').querySelectorAll('[data-a]').forEach((b) => (b.onclick = () => { const id = b.dataset.a; m.asked.push(id); if (!m.found.includes(id)) m.found.push(id); renderQuest(); openMTalk(); }));
+  $('#bNext').onclick = m.kitsuke ? openMForm : openMKitsuke; $('#bClose').onclick = closeSheet;
+}
+// ゆかたの 着方（夕方の したく）：合わせ方を 2つから えらぶと、トルソーの ゆかたが かわる。右前で 先へ
+function openMKitsuke() {
+  const m = S.m; S.story.c2act = 'matsuri'; FSEL = null; renderQuest();
+  const pic = (dir) => torsoSvg({ layers: [{ k: 'out' }, { k: 'mid', lock: '-' }, { k: 'skin' }], get: () => null, yukata: dir, paint: M_PAINT });
+  const bare = () => torsoSvg({ layers: [{ k: 'mid', lock: '-' }, { k: 'skin' }], get: () => null, paint: { skin: M_PAINT.skin } });
+  const opts = [['L', '左の 身ごろを 先に 体に 合わせて、右の 身ごろを 上に 重ねる'], ['R', '右の 身ごろを 先に 体に 合わせて、左の 身ごろを 上に 重ねる']];
+  openSheet(`<h2>ゆかたの 着方：夕方の したく</h2><p class="sub">${gl('ヒナタは、祭りの 日の 夕方、自分で ゆかたを 着る。おばあちゃんの ゆかたで、前の 合わせ方を たしかめよう（教科書の 和服の ページを 見てよい）')}</p>
+    ${say('ヒナタ', 'ゆかたって、前を 重ねて 着るんだよね。でも、右と 左、どっちを 上に するんだっけ……？')}
+    <div class="kitsuke"><div class="ktorso">${m.awase ? pic(m.awase) : bare()}<p class="tcap">${m.awase ? '前から 見た ところ' : '合わせ方を えらぶと、ゆかたを 着る'}</p></div>
+      <div class="kopts"><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>どちらの 合わせ方で 着る？ えらぶと、絵が かわる</span></p>
+        <p class="sub" style="margin:0 0 2px">右・左は、着る人（ヒナタ）から 見た 右・左</p>
+        ${opts.map(([d, t]) => `<button class="kopt${m.awase === d ? ' on' : ''}" data-aw="${d}" aria-pressed="${m.awase === d}">${t}</button>`).join('')}
+        ${m.ng ? `<div class="khint">${say('ヒナタ', 'あれ？ おばあちゃんが「その 合わせ方は、いつもと 反対だよ」って……。')}${lnHtml({ who: aiNm(), t: aiSnd() + '衿の 重なり方を 見よう。ギルドの ツムギさんは、いつも 着物を きちんと 着ているよ。前から 見ると、衿は どんな 形かな？ 教科書の 和服の ページとも くらべてみよう。' })}</div>` : ''}
+      </div></div>
+    <div class="row"><button id="bBack">① 聞き込みへ</button><button class="main" id="bWear"${m.awase ? '' : ' disabled'}>この 合わせ方で 着る</button></div>`, true);
+  $('#sheet').querySelectorAll('[data-aw]').forEach((b) => (b.onclick = () => { m.awase = b.dataset.aw; m.ng = false; openMKitsuke(); $('#bWear').focus(); }));
+  $('#bBack').onclick = openMTalk;
+  $('#bWear').onclick = () => {
+    if (m.awase !== 'R') { m.miss++; m.ng = true; saveGame(); return openMKitsuke(); }
+    m.kitsuke = true; m.ng = false; renderQuest(); saveGame();
+    openSheet(`<h2>右前で 着られた！</h2><p class="sub">${gl('右前：着る人の 右の 身ごろを 先に 体に 合わせ、左の 身ごろを 上に 重ねる。前から 見ると、衿が「y」の字に 見える')}</p>
+      <div class="kitsuke"><div class="ktorso">${pic('R')}<p class="tcap">前から 見ると、衿が「y」の字</p></div>
+      <div class="kopts">${say('ヒナタ', '右の 身ごろが 先、左が 上。これが 右前なんだね！')}${say('ヒナタ', '反対の 左前は、ふだんは 着ない 決まりなんだって。おばあちゃんが 言ってた。')}
+        ${lnHtml(ai({ meja: 'シュルルッ……ツムギさんの 衿と 同じ 形だね！ さあ、ゆかたの 布を 仕立てよう。', pinko: 'チクッ！ ツムギさんの 衿と おんなじ！ つぎは、ゆかたの 布を 決めよう！', iro: 'シュー……ツムギさんの 衿と 同じ 形だね。つぎは、ゆかたの 布を 考えよう。' }))}</div></div>
+      <div class="row"><button class="main" id="bForm">② フォーメーションへ（ゆかたを 仕立てる）</button><button id="bClose">とじる</button></div>`, true);
+    $('#bForm').onclick = openMForm; $('#bClose').onclick = closeSheet; $('#bForm').focus();
+  };
+}
+function openMForm() { FSEL = null; S.story.c2act = 'matsuri'; if (!S.m.kitsuke) return openMKitsuke(); mFormSheet(); }
+function mFormSheet() {
+  const m = S.m; if (m.stage < 1 || m.stage === 3) m.stage = 1; renderQuest();
+  const ev = mEval(), ready = !!(ev.oL && ev.sL);
+  const o = { layers: [
+      { k: 'out', what: 'ゆかた（人から 見える）', see: [1, 4], res: { 1: ev.wrinkle, 4: ev.owarm } },
+      { k: 'mid', what: 'セーターなど', lock: 'この依頼では 使わない' },
+      { k: 'skin', what: '肌着（ゆかたの 下に 着る）', see: [2, 3], res: { 2: ev.sweat, 3: ev.sdry } }],
+    get: (k, i) => S.mform[k][i], set: (k, i, n) => { S.mform[k][i] = n; }, hand: [1, 2, 3, 4], yukata: 'R' };
+  const need = () => [!ready && '外側と肌側に おもな センモンを 置く', m.reason == null && '理由を 1つ えらぶ'].filter(Boolean);
+  const memo = [MQ.memo0, 'ゆかたは 右前（右の 身ごろが 先・左が 上）', ...M_ASKS.filter((x) => m.found.includes(x.id)).map((x) => x.memo + (m.asked.includes(x.id) ? '' : '（旅で わかった）'))];
+  openSheet(`<h2>② フォーメーション：${MQ.name}</h2><p class="sub">${gl('ヒナタの ゆかたを 仕立てる。外側＝ゆかた、肌側＝肌着（ゆかたの 下に 着る）。まん中は 使わない。1まいの布に、2つの センモンを まぜても よい（混用）')}</p>
+    ${lnHtml(ai({ meja: 'シュルルッ……夏の 夕方から 夜までの 祭りだね。場面ごとに、見る 所を はかろう！', pinko: 'チクッ！ 夏祭りの 1日を 思いうかべて、ゆかたと 肌着を 決めよう！', iro: 'シュー……暑い 日の ゆかた。あたたかすぎない ほうが いいかもね。' }))}
+    ${memoHtml(memo)}
+    ${boardHtml(o)}
+    ${ev.notes.length ? `<p class="sub" style="margin:6px 0 0">${ev.notes.map(gl).join('<br>')}</p>` : ''}
+    ${m.asked.includes('baa') ? `<p style="margin:10px 0 4px;font-size:14px"><b>おばあちゃんの ゆかた</b>（小さくて もう 着られない）</p>
+    <div class="reasons">${M_KEEP.map((k, i) => `<label><input type="radio" name="kp" value="${i}"${m.keep === i ? ' checked' : ''}> ${gl(k)}</label>`).join('')}</div>` : ''}
+    <p style="margin:10px 0 4px;font-size:14px"><b>この組み方にした理由</b>（1つ選ぶ）</p>
+    <div class="reasons">${M_REASONS.map((r, i) => `<label><input type="radio" name="rs" value="${i}"${m.reason === i ? ' checked' : ''}> <span>${gl(r.t)}</span></label>`).join('')}</div>
+    ${footHtml(need(), `<button id="bClose">とじる</button><button id="bTalk">① 聞き込み</button><button class="main" id="bTrip"${need().length ? ' disabled' : ''}>③ この ゆかたで 夏祭りへ（旅）</button>`)}`, true);
+  bindBoard(o, mFormSheet); bindMemo();
+  $('#sheet').querySelectorAll('input[name=kp]').forEach((r) => (r.onchange = () => { m.keep = +r.value; }));
+  $('#sheet').querySelectorAll('input[name=rs]').forEach((r) => (r.onchange = () => { m.reason = +r.value; setNeed(need()); }));
+  $('#bTrip').onclick = openMTrip; $('#bTalk').onclick = openMTalk; $('#bClose').onclick = closeSheet;
+}
+function openMTrip() {
+  const m = S.m, ev = mEval(), ch = { fan: null }; m.stage = 2; m.tries++; renderQuest();
+  S.mdressed = { out: ev.oL.hue, skin: ev.sL.hue, keep: m.asked.includes('baa') ? m.keep : 0 }; dressMatsuri();   // 仕立てた ゆかたを、ヒナタが 着る
+  let n = 0, shown = 0;
+  const chip = (x) => `<span class="chip ${x.ok ? 'ok' : 'ng'}">${x.ok ? (x.byWear ? 'ねがいに合っている（着方の工夫）' : x.byWaza ? 'ねがいに合っている（わざ）' : 'ねがいに合っている') : 'まだ'}</span>`;
+  const draw = () => {
+    const st = mSteps(ev, ch), last = st[n - 1], waiting = last && last.ev && ch[last.ev] == null;
+    openSheet(`<h2>③ 旅：夏祭りの村</h2><p class="sub">${gl('しずく時計：しずくが1つ落ちるたびに、1日の時間が 少し進む。仕立てた服で、ヒナタの 祭りの 日が どうなるかを 先に たしかめる')}（${m.tries}回目）。とちゅうで、ヒナタの 行動を 選ぶ</p>
+      <div class="tripwrap"><div class="tclock">${dropClock(st, n, shown)}
+        <div class="tbtn">${waiting ? '<p class="sub">出来事：ヒナタの 行動を えらぼう</p>' : n < st.length ? '<button class="main" id="bDrop"><span class="material-symbols-outlined">water_drop</span>しずくを落とす</button>' : '<button class="main" id="bLook">④ ふりかえりへ</button>'}</div></div>
+      <div class="tlog">${n ? '' : '<p class="sub">しずくを 落とすと、祭りの 日の 夕方から 始まる</p>'}
+      ${st.slice(0, n).map((x) => (x.narr ? `<div class="scene"><b>${x.name}</b>${lnHtml({ scr: x.scr })}<span class="voice">ヒナタ「${gl(x.say)}」</span></div>`
+        : x.ev ? (ch[x.ev] == null ? `<div class="evq"><b>${x.name}</b><br>${gl(x.q)}<div class="asks">${x.opts.map((o, j) => `<button data-e="${x.ev}" data-j="${j}">${o}</button>`).join('')}</div></div>`
+          : `<div class="scene"><b>${x.name}</b>　<small>選んだ：${x.opts[ch[x.ev]]}</small><br><span class="voice">ヒナタ「${gl(x.res(ch[x.ev]))}」</span></div>`)
+        : `<div class="scene"><b>${x.name}</b>　${chip(x)}<br><span class="voice">ヒナタ「${gl(x.msg)}」</span></div>`)).join('')}</div></div>`, true);
+    shown = n; spinClock(); tripScroll();
+    $('#sheet').querySelectorAll('[data-e]').forEach((b) => (b.onclick = () => { ch[b.dataset.e] = +b.dataset.j; draw(); }));
+    if (!waiting && n < st.length) { $('#bDrop').onclick = () => { n++; draw(); }; $('#bDrop').focus({ preventScroll: true }); }
+    else if (!waiting) { $('#bLook').onclick = () => openMLook(ev, ch); $('#bLook').focus({ preventScroll: true }); }
+  };
+  draw();
+}
+function openMLook(ev, ch) {
+  const m = S.m; m.stage = 3; soilAfterTrip([S.mform.skin[0] && byName(S.mform.skin[0]), S.mform.out[0] && byName(S.mform.out[0])]);
+  const sc = mSteps(ev, ch).filter((x) => x.id), ng = sc.filter((x) => !x.ok), r = M_REASONS[m.reason], rs = r.wish ? sc.find((x) => x.id === r.wish) : null, rOk = !!(rs && rs.ok && !rs.byWear && !rs.byWaza);
+  const stars = Math.max(1, 3 - Math.min(2, ng.length) - (rOk ? 0 : 1));
+  const unheard = M_ASKS.filter((x) => x.kind === 'ようす' && !m.found.includes(x.id));
+  M_ASKS.forEach((x) => { if (x.kind === 'ようす' && !m.found.includes(x.id)) m.found.push(x.id); });   // 旅を すると、聞いていなかった「ようす」も わかる
+  const hearts = [
+    { ok: M_ASKS.some((x) => x.kind === '気持ち' && m.asked.includes(x.id)), t: 'ヒナタの 気持ちを 聞いた', hint: '「気持ち」の 質問も してみよう' },
+    { ok: sc.find((x) => x.id === 'hanabi').ok, t: '友だちと、花火を さいごまで 笑顔で 見られた', hint: '夜の 川原で、汗が ひえても こまらない 服なら……' },
+    { ok: m.keep > 0, t: 'おばあちゃんの ゆかたを、もう一度 使える 形に した', hint: m.asked.includes('baa') ? 'フォーメーションで、おばあちゃんの ゆかたの 生かし方を 選んでみよう' : 'おばあちゃんの ゆかたが ヒナタに とって どんな ものか、聞いてみよう' },
+  ];
+  const hc = hearts.filter((h) => h.ok).length;
+  Rec.quest({ questId: 'matsuri', try: m.tries, stars, hearts: hc, formation: formText(S.mform), reason: r.t });
+  m.best = Math.max(m.best, stars); m.hearts = Math.max(m.hearts, hc); if (stars === 3) m.done = true; renderQuest(); saveGame();
+  const lack = rs && (rs.lack || `${rs.see}が まだ たりない`);
+  const rLine = !r.wish ? `その ねがいは、なかった（${r.why}）` : rOk ? '理由と、旅の結果が 合っている' : rs.byWear ? `うちわで あおいだから 汗は へったけど、${lack}（着方の工夫で ふせいだ）` : rs.byWaza ? `麻の【さらり】で ふせいだけど、${lack}` : `ねがいは 合っているけど、${lack}`;
+  const keepNm = m.keep === 1 ? 'きんちゃく袋' : 'ハンカチ';
+  const ending = stars === 3 && hc === 3 ? `ありがとう、仕立て屋さん！ おばあちゃんの ゆかたも、${keepNm}に なって いっしょだよ。さあ、友だちが まってる。いってきます！`
+    : stars === 3 ? 'ありがとう！ これで 自分で ゆかたを 着て、夏祭りに 行けるよ。' : '';
+  const draw = () => {
+    openSheet(`<h2>④ ふりかえり${stars === 3 ? '　依頼 達成！' : ''}</h2><p class="sub">${m.tries}回目の結果（夏祭りの村）</p>
+      <div class="stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}<span style="font-size:14px;color:var(--ai);letter-spacing:0">　ねがいに合っているか</span></div>
+      <table class="tb"><tr><th>場面</th><th>見た所</th><th>結果</th></tr>${sc.map((x) => `<tr><td>${x.name}</td><td>${gl(x.see)}</td><td><span class="chip ${x.ok ? 'ok' : 'ng'}">${x.ok ? (x.byWear ? '合っている（着方の工夫）' : x.byWaza ? '合っている（わざ）' : 'ねがいに合っている') : 'まだ'}</span></td></tr>`).join('')}</table>
+      ${ng.length ? `<p style="font-size:14px;margin:10px 0 0"><b>困る声</b>${ng.map((x) => `<br>・<span class="voice">ヒナタ「${gl(x.msg)}」</span><br>　<small>手がかり：${gl(x.hint)}</small>`).join('')}</p>` : ''}
+      <div class="hearts"><b>気持ちに よりそえた所</b>　${'●'.repeat(hc)}${'○'.repeat(3 - hc)}${hearts.map((h) => `<br>${h.ok ? '●' : '○'} ${gl(h.t)}${h.ok ? '' : `<br>　<small>手がかり：${gl(h.hint)}</small>`}`).join('')}</div>
+      ${ending ? say('ヒナタ', ending) : ''}
+      <p style="font-size:14px;margin:10px 0 0"><b>理由</b>：${gl(r.t)}<br>→ ${gl(rLine)}</p>
+      ${unheard.length ? `<p style="font-size:14px;margin:10px 0 0"><b>聞いていなかった ようす</b>（旅で わかった。依頼メモに のせた）${unheard.map((x) => `<br>・${gl(x.memo)}`).join('')}</p>` : ''}
+      ${m.tries === 1 ? '<p class="sub" style="margin:6px 0 0">旅の あと、聞き込みが もう2つ できる</p>' : ''}
+      ${ng.length ? '<p class="sub" style="margin:6px 0 0">てもちに 合う子が いなければ、地方を 歩いて なかまを さがそう（左下の「入れかえ」で てもちを 入れかえる）</p>' : ''}
+      ${c2Ready() && !S.ch.done.includes(3) ? '<p class="sub" style="margin:6px 0 0;color:var(--akane)">町の依頼が 2つ ★2いじょうに なった！ ギルドの ツムギに 報告しよう</p>' : ''}
+      <p style="font-size:14px;margin:10px 0 4px"><b>手帳に1行</b>（わかったこと・次に変えること）</p>
+      <textarea id="note" style="width:100%;box-sizing:border-box;height:52px;font:inherit;font-size:14px"></textarea>
+      ${m.notes.length ? `<p class="sub" style="margin:4px 0 0">これまでの手帳：${m.notes.map(esc).join('／')}</p>` : ''}
+      <div class="row"><button id="bNote">手帳に書く</button><button id="bTalk">① 聞き込み</button><button class="main" id="bRe">${stars === 3 ? '別の組み方も ためす' : '直して もう一度'}</button><button id="bClose">とじる</button></div>`);
+    $('#bNote').onclick = () => { const x = $('#note').value.trim(); if (!x) return; m.notes.push(x); Rec.add('note', `夏祭りの村：${x}`); toast('手帳に書きました'); saveGame(); draw(); };
+    $('#bTalk').onclick = openMTalk; $('#bRe').onclick = openMForm; $('#bClose').onclick = closeSheet;
+  };
+  draw();
+}
+// 第2章の おわり：3つの 町の依頼の うち 2つが ★2いじょう → ③ 装いのボタン
 function c2End() {
   talkSeq('ギルド長ツムギ', [
-    { who: 'ツムギ', t: '2つの 依頼、よく がんばったね。おばあさんも、ゆうびん屋さんも、よろこんでいたよ。' },
+    { who: 'ツムギ', t: '町の 依頼、よく がんばったね。依頼人の みんなが、よろこんでいたよ。' },
     { who: 'ツムギ', t: '服は、着る人と 場面に 合わせて 選ぶ。重ねる 順にも、まぜる 繊維にも、ぜんぶ 理由が あるんだ。' },
     ai({ meja: 'シュルルッ……でも、縮んだり 黄ばんだり した 服が、多かったね。', pinko: 'チクッ……でも、縮んだり 黄ばんだり した 服、多かったよね。', iro: 'シュー……でも、縮んだり 黄ばんだり した 服が、多かった……。' }),
     { who: 'ツムギ', t: '……洗濯の ことは、見習いには まだ 早いよ。さあ、これを。' },
@@ -4532,7 +4855,7 @@ function updTsuSign() {
   scene.remove(TSU_SIGN); scene.add(n); TSU_SIGN = n;
 }
 const boronHome = () => !!S.story.boronFriend || S.ch.done.includes(7);   // なかまに なった ボロンは、倉庫の 前に いる
-Object.assign(WHO_C, { 'ボロン': '#7a6fb0', 'スソダレ': '#7a6fb0', 'ゆうびん屋さん': '#3a7ca5' });
+Object.assign(WHO_C, { 'ボロン': '#7a6fb0', 'スソダレ': '#7a6fb0', 'ゆうびん屋さん': '#3a7ca5', 'ヒナタ': '#c8553d' });
 const C5_GOAL = { start: 'ギルドの入口の ツムギに 話しかけよう', sew: 'ツムギに 話しかけて、町の 服を 直そう', done: '' };
 const STITCH = [
   { n: 'なみ縫い', d: '布を 縫い合わせる 基本の 縫い方' },
@@ -4964,7 +5287,7 @@ function openEnding() {
   openSheet(`<h2>旅の ふりかえり</h2><div class="endcard"><p class="big">一人前の 仕立て屋　${nm()}</p>${marksHtml(true)}</div>
     <div class="ending">
       <div><span class="material-symbols-outlined">menu_book</span>図鑑 ${S.met.size}/${dexList().length}</div>
-      <div><span class="material-symbols-outlined">assignment</span><span>れんしゅう ${st(S.p.best)}<br>お祝いの式 ${st(S.q.best)}<br>雪の峠 ${st(S.y.best)}</span></div>
+      <div><span class="material-symbols-outlined">assignment</span><span>れんしゅう ${st(S.p.best)}<br>お祝いの式 ${st(S.q.best)}<br>雪の峠 ${st(S.y.best)}<br>夏祭りの村 ${st(S.m.best)}</span></div>
       <div><span class="material-symbols-outlined">edit_note</span>なぞの手帳 ${S.nazo.length}行</div>
       <div><span class="material-symbols-outlined">receipt_long</span>合体の レシピ ${T1().rec.length}こ</div>
       <div><span class="material-symbols-outlined">local_laundry_service</span>洗った 服 ${(S.story.w || []).length}まい・直した 服 ${(S.story.sew || []).length}まい</div>
@@ -5041,6 +5364,8 @@ function rewindTo(i) {
     Object.assign(S.q, { stage: 0, asked: [], found: [], reason: null, tries: 0, best: 0, done: false, notes: [], clues: [], appraised: false, guess: null, keep: 0, hearts: 0 });
     Object.assign(S.y, { stage: 0, asked: [], found: [], reason: null, tries: 0, best: 0, done: false, notes: [], checked: false, guess: null, keep: 0, hearts: 0 });
     S.form = { out: [null, null], mid: [null, null], skin: [null, null] }; S.yform = { out: [null, null], mid: [null, null], skin: [null, null] }; S.dressed = null; S.ydressed = null;
+    Object.assign(S.m, { stage: 0, asked: [], found: [], reason: null, tries: 0, best: 0, done: false, notes: [], kitsuke: false, awase: null, miss: 0, keep: 0, hearts: 0 });
+    S.mform = { out: [null, null], mid: [null, null], skin: [null, null] }; S.mdressed = null; dressMatsuri();
   }
   if (i <= 4) { st.c3 = 'start'; st.w = []; delete st.w0; delete st.suiri; S.dirt = {}; }
   if (i <= 5) { delete st.c5; delete st.sew; }
@@ -5094,6 +5419,7 @@ function placeName(x, z) {
   if (Math.hypot(x - TOWER.x, z - TOWER.z) < 6) return '糸と布の塔';
   if (Math.hypot(x - WASH.x, z - WASH.z) < 4.6) return 'ギルドの洗い場';
   if (Math.hypot(x - SPOTS.touge.x, z - SPOTS.touge.z) < 4.5) return '雨の峠';
+  if (Math.hypot(x - MURA.x, z - MURA.z) < MURA.r + 1) return '夏祭りの村';
   for (const k of ['guild', 'gate', 'plant', 'animal', 'chem']) { const r = REGION[k]; if (Math.hypot(x - r.x, z - r.z) < r.r) return r.name; }
   return 'ファブリアの道';
 }
@@ -5154,19 +5480,20 @@ function step(dt) {
     if (pd < nd) { nd = pd; near = sp; }
   });
   const dist = (o) => (o ? Math.hypot(o.position.x - player.position.x, o.position.z - player.position.z) : 99);
-  const ppl = [['g', dist(GRANNY)], ['p', dist(POST)], ['t', dist(TSUMUGI)]].filter((x) => x[1] < 3.5).sort((a, b) => a[1] - b[1]), who = ppl.length ? ppl[0][0] : null;
-  S.nearGranny = who === 'g'; S.nearPost = who === 'p'; S.nearTsumugi = who === 't';
+  const ppl = [['g', dist(GRANNY)], ['p', dist(POST)], ['m', dist(MATSURI)], ['t', dist(TSUMUGI)]].filter((x) => x[1] < 3.5).sort((a, b) => a[1] - b[1]), who = ppl.length ? ppl[0][0] : null;
+  S.nearGranny = who === 'g'; S.nearPost = who === 'p'; S.nearMatsuri = who === 'm'; S.nearTsumugi = who === 't';
   if (who) near = null;   // 人を先に
   let npc = null, nnd = 3.5;   // 町の人・マトイ・ボロン
   if (!who) NPCS.forEach((o) => { if (o.visible === false || !TOWN_TALK[o.userData.key]) return; const d = dist(o); if (d < nnd) { nnd = d; npc = o; } });
   S.nearNpc = npc; if (npc) near = null;
   const js = spotKey();   // 物語の場所を いちばん先に
   S.nearSpot = js && Math.hypot(SPOTS[js].x - player.position.x, SPOTS[js].z - player.position.z) < 3.6 ? js : null;
-  if (S.nearSpot) { near = null; S.nearGranny = S.nearTsumugi = S.nearPost = false; S.nearNpc = null; }
-  S.near = near; $('#prompt').style.display = (near || S.nearGranny || S.nearTsumugi || S.nearPost || S.nearSpot || S.nearNpc) && !S.open ? 'block' : 'none';
+  if (S.nearSpot) { near = null; S.nearGranny = S.nearTsumugi = S.nearPost = S.nearMatsuri = false; S.nearNpc = null; }
+  S.near = near; $('#prompt').style.display = (near || S.nearGranny || S.nearTsumugi || S.nearPost || S.nearMatsuri || S.nearSpot || S.nearNpc) && !S.open ? 'block' : 'none';
   if (S.nearSpot) $('#prompt').textContent = `▼ ${spotLabel(S.nearSpot)}${TALK_KEY()}`;
   else if (S.nearGranny) $('#prompt').textContent = `▼ ${QUEST.who}に 話しかける${TALK_KEY()}`;
   else if (S.nearPost) $('#prompt').textContent = `▼ ${YQ.who}に 話しかける${TALK_KEY()}`;
+  else if (S.nearMatsuri) $('#prompt').textContent = `▼ ${MQ.who}に 話しかける${TALK_KEY()}`;
   else if (S.nearTsumugi) $('#prompt').textContent = `▼ ${tsuName()}に 話しかける${TALK_KEY()}`;
   else if (S.nearNpc) $('#prompt').textContent = `▼ ${TOWN_TALK[S.nearNpc.userData.key].name}に 話しかける${TALK_KEY()}`;
   else if (near) $('#prompt').textContent = `▼ ${near.userData.s.name} に 話しかける${TALK_KEY()}`;
@@ -5282,7 +5609,7 @@ function wire() {
     if (S.home) return;
     if (S.open) { if (e.code === 'Escape') closeSheet(); return; }
     if (BENCH) return;
-    if (e.code === 'Space' && (S.nearGranny || S.nearTsumugi || S.nearPost || S.near || S.nearSpot || S.nearNpc)) { e.preventDefault(); talkNear(); return; }
+    if (e.code === 'Space' && (S.nearGranny || S.nearTsumugi || S.nearPost || S.nearMatsuri || S.near || S.nearSpot || S.nearNpc)) { e.preventDefault(); talkNear(); return; }
     S.keys.add(e.code); if (e.code.startsWith('Arrow')) e.preventDefault();
   });
   addEventListener('keyup', (e) => S.keys.delete(e.code));
@@ -5318,7 +5645,7 @@ function wire() {
   $('#prompt').onclick = talkNear;
   if (COARSE) { $('#help').textContent = '地面を タップで 歩く ／ ドラッグで 見まわす ／ 2本指で 近づく ／ ▼を タップで 話しかける'; $('#prompt').textContent = '▼ 話しかける（ここを タップ）'; }
   $('#btnDex').onclick = openDex; $('#btnHelp').onclick = () => openHelp(0);
-  $('#btnForm').onclick = () => (S.ch.open < 3 || !S.mine ? toast('フォーメーションは、第2章の 依頼で 使うよ') : S.p.done ? (S.story.c2act === 'yuki' ? (S.y.checked ? openYForm() : openYuki()) : openForm()) : S.p.started ? openPForm() : toast('まずは ギルドの入口の ツムギに 話しかけよう'));
+  $('#btnForm').onclick = () => (S.ch.open < 3 || !S.mine ? toast('フォーメーションは、第2章の 依頼で 使うよ') : S.p.done ? (S.story.c2act === 'yuki' ? (S.y.checked ? openYForm() : openYuki()) : S.story.c2act === 'matsuri' ? (S.m.kitsuke ? openMForm() : openMatsuri()) : openForm()) : S.p.started ? openPForm() : toast('まずは ギルドの入口の ツムギに 話しかけよう'));
   $('#btnNote').onclick = () => openNote();
   $('#btnBench').onclick = startBench; $('#btnPerfSet').onclick = openPerfSet;
   $('#overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay') closeSheet(); });
@@ -5344,7 +5671,7 @@ const SM = window.SM = { S, manual: false, coll: () => COLL.length, push: (x, z)
   step(n = 1, dt = 1 / 30) { for (let i = 0; i < n; i++) step(dt); renderer.render(scene, camera); },
   tp(x, z) { player.position.set(x, 0, z); placeFree(); S.hist = []; },
   near: () => (S.near ? S.near.userData.s.name : null), q: () => S.q, p: () => S.p, quiz: (n) => makeQuiz(WILD.find((w) => w.name === n)), box: openBox, join: joinWild, wilds: () => WILDS.map((w) => w.userData.s.name), wildAt: (n) => { const w = WILDS.find((x) => x.userData.s.name === n); return w ? [w.position.x, w.position.z] : null; }, party: () => PARTY.map((x) => x.name), talk: openTalk, tsumugi: openTsumugi, help: openHelp, gl, form: openForm, ev: () => evalForm(), place: () => $('#placeName').textContent,
-  openForm, openDex, closeSheet, api: () => Api.kind, rec: () => S.outbox, demoDb: () => MockDb.load(), sync: () => Sync.flush(), wild: () => WILD.map((x) => x.name), note: () => openNote(), teacher: () => openTeacher(), spot: (k) => openSpot(k), cur: () => curCh(), home: openHome, save: saveGame, readSave, yuki: () => openYuki(), tower: () => openTower(), yev: () => yEval(), senmon: (n) => ALL_SENMON.find((x) => x.name === n), CFG, cast: buildCast, bench: startBench, benching: () => !!BENCH, perf: () => ({ calls: PERF.calls, tris: PERF.tris, n: PERF.ms.length }) };
+  openForm, openDex, closeSheet, api: () => Api.kind, rec: () => S.outbox, demoDb: () => MockDb.load(), sync: () => Sync.flush(), wild: () => WILD.map((x) => x.name), note: () => openNote(), teacher: () => openTeacher(), spot: (k) => openSpot(k), cur: () => curCh(), home: openHome, save: saveGame, readSave, yuki: () => openYuki(), tower: () => openTower(), yev: () => yEval(), matsuri: () => openMatsuri(), mev: () => mEval(), senmon: (n) => ALL_SENMON.find((x) => x.name === n), CFG, cast: buildCast, bench: startBench, benching: () => !!BENCH, perf: () => ({ calls: PERF.calls, tris: PERF.tris, n: PERF.ms.length }) };
 (async function boot() {
   try {
     try { if (!TAIKEN && localStorage.getItem('senmon-perf')) $('#perf').classList.add('on'); } catch (e) { /* 保存できない ブラウザ */ }
@@ -5358,6 +5685,7 @@ const SM = window.SM = { S, manual: false, coll: () => COLL.length, push: (x, z)
     const gs3 = textSprite('ギルド長ツムギ', 260, 56); gs3.scale.multiplyScalar(0.42); gs3.position.set(TSU_SPOT[0], 3.35, TSU_SPOT[2]); scene.add(gs3); TSU_SIGN = gs3;
     const gs2 = textSprite(QUEST.who, 300, 56); gs2.scale.multiplyScalar(0.42); gs2.position.set(GRANNY_SPOT[0], 3.35, GRANNY_SPOT[2]); scene.add(gs2);
     const gs4 = textSprite(YQ.who, 280, 56); gs4.scale.multiplyScalar(0.42); gs4.position.set(POST_SPOT[0], 3.35, POST_SPOT[2]); scene.add(gs4);
+    const gs5 = textSprite(MQ.who, 300, 56); gs5.scale.multiplyScalar(0.42); gs5.position.set(MATSURI_SPOT[0], 3.1, MATSURI_SPOT[2]); scene.add(gs5);
     MARK = markSprite();
     $('#loading').style.display = 'none'; READY = true; if ($('#hWait')) $('#hWait').remove(); READY_Q.splice(0).forEach((f) => f()); requestAnimationFrame(loop);
     setInterval(() => saveGame({ tick: true }), 5000); addEventListener('pagehide', () => saveGame()); document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
