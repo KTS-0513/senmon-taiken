@@ -1535,6 +1535,9 @@ function buildWorld() {
   const tg = textSprite('雨の峠', 200, 52); tg.scale.multiplyScalar(0.7); tg.position.set(SPOTS.touge.x, 3.4, SPOTS.touge.z - 2.6); scene.add(tg);
   // 商人の町：閉じた門と、キルトの 塀
   wp(W, new THREE.BoxGeometry(44, 4, 1.2), 0xffffff, 0, 2, 46, { map: W_TEX.wallQ, t: 0.1 });
+  // 塀を 大陸の 水べり（x ±36）まで のばし、はしに 柱。見えない 壁を なくし、塀の 線＝入れない 線に そろえる（本人 2026-10-25「消費へつながる壁が マップ上も 曖昧。しっかり 入れないように」）
+  [-29, 29].forEach((x) => wp(W, new THREE.BoxGeometry(14.2, 4, 1.2), 0xffffff, x, 2, 46, { map: W_TEX.wallQ, t: 0.1 }));
+  [-36.2, 36.2].forEach((x) => { wp(W, new THREE.CylinderGeometry(0.7, 0.75, 5.2, 14), 0xc6b18f, x, 2.6, 46); wp(W, new THREE.ConeGeometry(0.9, 1, 14), 0xd9564b, x, 5.7, 46, { t: 0.05 }); });
   [-4, 4].forEach((x) => { wp(W, new THREE.CylinderGeometry(0.9, 0.95, 7, 18), 0xc6b18f, x, 3.5, 45.6); wp(W, new THREE.ConeGeometry(1.15, 1.2, 18), 0xd9564b, x, 7.6, 45.6, { t: 0.05 }); });
   wp(W, new THREE.BoxGeometry(6.4, 5, 0.6), 0xffffff, 0, 2.5, 45.2, { map: W_TEX.gateDoor, t: 0.06 });
   const ms = textSprite('商人の町（まだ ひらかない）', 400, 64, '#6b6457', '#f4efe6'); ms.position.set(0, 7.6, 45); scene.add(ms);
@@ -1631,10 +1634,17 @@ function pushOut(p) {
     }
     people.forEach((o) => circ(o.position.x, o.position.z, 0.7));
     const d = Math.hypot(p.x, p.z); if (d > 58) { p.x *= 58 / d; p.z *= 58 / d; hit = true; }   // 大陸の ふち（水べり）
-    if (p.z > 43.5) { p.z = 43.5; hit = true; }   // 商人の町の 塀
+    if (p.z > 43.5) { p.z = 43.5; hit = true; gateBump(); }   // 商人の町の 塀（大陸の 両はしまで のびている。見た目の 塀と 同じ 線）
     if (!hit) break;
   }
   return p;
+}
+// 商人の町の 塀に ぶつかったら 知らせる（8秒に 1回まで。空から 降りる あいだや 窓が 開いている ときは 出さない）
+let gateMsgAt = 0;
+function gateBump() {
+  const t = performance.now();
+  if (t - gateMsgAt < 8000 || S.open || S.home || CINE) return;
+  gateMsgAt = t; toast('商人の町の 門は、まだ ひらかない（この先の 物語で ひらく）');
 }
 // 置いた 位置が 当たりの 中なら、外へ 出す（出現・テレポート・つづきから・空から 降りる 所）
 function placeFree() { const p = pushOut({ x: player.position.x, z: player.position.z }); player.position.set(p.x, 0, p.z); }
