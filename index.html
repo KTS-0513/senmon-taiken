@@ -94,7 +94,7 @@ table.tb th { background:var(--kinari2); white-space:nowrap; }
 .glab.sm { font-size:12px; }   /* まん中の字も 読める大きさに（白いふちで 服の線に かかっても 読める） */
 @media (prefers-reduced-motion:reduce) { .gar.on, .gar.just { animation:none; } }
 .hdemo { display:grid; grid-template-columns:150px minmax(0,1fr); gap:10px; align-items:start; }
-.guide { display:flex; align-items:center; gap:6px; margin:0; font-size:13px; background:#fff; border-left:4px solid var(--akane); padding:5px 8px; }
+.guide { display:flex; align-items:center; gap:6px; margin:0; font-size:16px; line-height:1.5; background:#fff; border-left:4px solid var(--akane); padding:5px 8px; }
 .guide b { color:var(--akane); }
 .guide .material-symbols-outlined { font-size:20px; color:var(--akane); }
 .board { display:flex; flex-direction:column; gap:5px; }
@@ -324,7 +324,11 @@ table.mix td.up { background:#fbecc4; font-weight:700; color:var(--akane); }
 .term { border-bottom:1.5px dotted var(--akane); cursor:help; }
 #termPop { position:fixed; z-index:60; display:none; max-width:300px; background:#fffdf6; color:var(--ai); font-size:13px; line-height:1.6; padding:9px 12px; border-radius:6px; outline:2px dashed rgba(46,58,89,.55); outline-offset:-4px; }
 #termPop b { color:var(--akane); }
-#toast { z-index:70; position:fixed; left:50%; top:56px; transform:translateX(-50%); background:var(--ai); color:#fff; border-radius:4px; padding:7px 14px; font-size:14px; display:none; outline:2px dashed rgba(255,255,255,.7); outline-offset:-4px; }
+#toast { z-index:70; position:fixed; left:50%; top:56px; transform:translateX(-50%); background:var(--ai); color:#fff; border-radius:4px; padding:7px 8px 7px 14px; font-size:15px; display:none; align-items:center; gap:8px; max-width:min(560px,92vw); cursor:pointer; outline:2px dashed rgba(255,255,255,.7); outline-offset:-4px; }
+#toastX { display:flex; align-items:center; justify-content:center; min-width:32px; min-height:32px; padding:0; background:transparent; color:#fff; border:0; outline:none; cursor:pointer; }
+#toastX .material-symbols-outlined { font-size:20px; }
+/* 窓の 外を 押したとき：押す ボタンを 光らせる（窓は 閉じない） */
+#sheet button.nudge, #home button.nudge { outline:3px solid var(--akane); outline-offset:2px; background:#fbecc4; }
 #prompt { white-space:nowrap; max-width:92vw; overflow:hidden; text-overflow:ellipsis; }
 /* 低い画面・せまい画面では、欄を小さく。操作の説明はかくす */
 @media (max-height:560px), (max-width:900px) {
@@ -645,9 +649,9 @@ button:disabled { opacity:.45; cursor:default; }
 <div id="overlay"><div id="sheetWrap"><div id="sheet"></div></div></div>
 <div id="home"></div>
 <div id="cineCap"></div>
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastX" aria-label="お知らせを とじる"><span class="material-symbols-outlined" aria-hidden="true">close</span></button></div>
 <div id="demoBar"></div>
-<div id="netChip"><span class="material-symbols-outlined">cloud_off</span><span>きろくを まだ 送れていない（この パソコンに とってある）</span></div>
+<div id="netChip"><span class="material-symbols-outlined" aria-hidden="true">cloud_off</span><span>きろくを まだ 送れていない（この パソコンに とってある）</span></div>
 <div id="termPop" role="tooltip"></div>
 <div id="loading">ファブリア大陸を読みこんでいます…</div>
 <div id="fail">3D の部品（Three.js）を読みこめませんでした。<br>インターネットにつながっているか、学校のフィルターで cdnjs が止められていないかを確かめてください。<button class="dbgLink" onclick="showDebug()">デバッグログを表示</button></div>
@@ -2002,10 +2006,16 @@ function renderHud() {
   $('#netChip').style.display = Sync.stuck() ? 'flex' : 'none';
 }
 function openSheet(html, wide) {
-  hideTerm(); $('#sheetWrap').classList.toggle('wide', !!wide); $('#sheetWrap').classList.toggle('story', wide === 'story'); const sh = $('#sheet'); sh.innerHTML = html; $('#overlay').style.display = 'flex'; S.open = true; S.keys.clear();
+  hideTerm(); if ($('#toast').style.display === 'flex' && !$('#toast').classList.contains('brief')) { $('#toast').style.display = 'none'; toastHeld = true; } $('#sheetWrap').classList.toggle('wide', !!wide); $('#sheetWrap').classList.toggle('story', wide === 'story'); const sh = $('#sheet'); sh.innerHTML = html; $('#overlay').style.display = 'flex'; S.open = true; S.keys.clear();
   sh.classList.toggle('long', sh.scrollHeight > sh.clientHeight + 4);   // 縦に 長い 窓は、下の ボタンの 行を いつも 見せる
 }
-function closeSheet() { $('#overlay').style.display = 'none'; S.open = false; saveGame(); }
+function nudgeSheet() {   // 窓の 外を 押したとき：閉じずに、次に 押す ボタンを 1秒 光らせる（ボタンの ない 窓だけは 閉じる）
+  const sh = $('#sheet'), b = sh.querySelector('.storyrow .main') || [...sh.querySelectorAll('.row .main, .sfoot .main')].pop() || [...sh.querySelectorAll('.row button')].pop();
+  if (!sh.querySelector('button')) return closeSheet();
+  if (!b) return;
+  b.classList.add('nudge'); clearTimeout(nudgeSheet.t); nudgeSheet.t = setTimeout(() => b.classList.remove('nudge'), 1100);
+}
+function closeSheet() { $('#overlay').style.display = 'none'; S.open = false; if (toastHeld) { toastHeld = false; $('#toast').style.display = 'flex'; } saveGame(); }
 function cardHtml(s, dimCare) {
   const f = FIB[s.fib];
   return `<h2><span class="patch" style="background:${hueCss(s.hue)}"></span>${s.name}</h2><p class="sub">${s.fib}・${f.type}タイプ　布の色 <span class="sw" style="background:${hueCss(s.hue)}"></span>（名前・絵・色は生徒がつくる）</p>
@@ -2381,7 +2391,7 @@ const LNAME = { out: '外側', mid: 'まん中', skin: '肌側' }, PART = ['お�
 // 依頼メモ（たためる。たたんだかは 窓を 描きなおしても おぼえておく）と、下に いつも 見える行（あと 何が 足りないか＋旅へ）
 let MEMO_OPEN = true;
 const memoHtml = (memo) => `<details class="memo" id="fmemo"${MEMO_OPEN ? ' open' : ''}><summary><b>依頼メモ</b>（${memo.length}）</summary>${memo.map((m) => `・${gl(m)}`).join('<br>')}</details>`;
-const needLine = (need) => (need.length ? `<span class="material-symbols-outlined">pending</span><span>あと ${need.length}つ：${need.join('／')}</span>` : '<span class="material-symbols-outlined">check_circle</span><span>じゅんび できた！ 旅へ 出られる</span>');
+const needLine = (need) => (need.length ? `<span class="material-symbols-outlined" aria-hidden="true">pending</span><span>あと ${need.length}つ：${need.join('／')}</span>` : '<span class="material-symbols-outlined" aria-hidden="true">check_circle</span><span>じゅんび できた！ 旅へ 出られる</span>');
 const footHtml = (need, btns) => `<div class="sfoot"><p class="need${need.length ? '' : ' ok'}" id="tripHint">${needLine(need)}</p><div class="row">${btns}</div></div>`;
 function setNeed(need) { const h = $('#tripHint'); h.innerHTML = needLine(need); h.classList.toggle('ok', !need.length); $('#bTrip').disabled = need.length > 0; }
 function bindMemo() { const d = $('#fmemo'); if (d) d.ontoggle = () => { MEMO_OPEN = d.open; }; }
@@ -2437,7 +2447,7 @@ function boardHtml(o) {
   const cell = (L, i) => {
     const n = o.get(L.k, i), s = n && byName(n), dis = i === 1 && !o.get(L.k, 0), sel = FSEL && FSEL.k === L.k && FSEL.i === i;
     return `<div class="cell ${i ? 'mix' : 'main'}${s ? ' fill' : ''}${sel ? ' sel' : ''}${dis ? ' dis' : ''}" data-k="${L.k}" data-i="${i}"${s ? ` style="background:${hueCss(s.hue, 80)}"` : ''}><span class="pct">${i ? 35 : 65}%</span>`
-      + (s ? `<img src="${faceUrl(s)}" alt=""><span><b>${s.name}</b><br>${s.fib}</span><button class="x" data-k="${L.k}" data-i="${i}" title="はずす"><span class="material-symbols-outlined">close</span></button>`
+      + (s ? `<img src="${faceUrl(s)}" alt=""><span><b>${s.name}</b><br>${s.fib}</span><button class="x" data-k="${L.k}" data-i="${i}" title="はずす"><span class="material-symbols-outlined" aria-hidden="true">close</span></button>`
         : `<span>${dis ? '<small>おもな センモンを<br>置いてから</small>' : i ? 'まぜる センモン<br><small>なくても よい</small>' : 'おもな センモン<br><small>ここに 置く</small>'}</span>`) + '</div>';
   };
   const res = (L) => {
@@ -2445,14 +2455,14 @@ function boardHtml(o) {
     if (!A) return `<div class="lres"><span class="see">この依頼で 見る所：${L.see.map((k) => gl(STAT[k])).join('・')}</span></div>`;
     return `<div class="lres"><span class="ctag">${gl('タグ')}　${B ? `${A.fib} 65%　${B.fib} 35%` : `${A.fib} 100%`}</span>${L.see.map((k) => { const a = FIB[A.fib].st[k], f = L.res[k]; return `<span>${gl(STAT[k])} ${f !== a ? `<s>${SYM[a]}</s>→` : ''}<b>${SYM[f]}</b></span>`; }).join('')}</div>`;
   };
-  const layer = (L) => (L.lock ? `<div class="layer off"><span class="material-symbols-outlined">lock</span><b>${LNAME[L.k]}</b>　${L.what}（${L.lock}）</div>`
+  const layer = (L) => (L.lock ? `<div class="layer off"><span class="material-symbols-outlined" aria-hidden="true">lock</span><b>${LNAME[L.k]}</b>　${L.what}（${L.lock}）</div>`
     : `<div class="layer${selL === L.k ? ' pick' : ''}" data-k="${L.k}"><div class="lhead"><b>${gl(LNAME[L.k])}</b>　${L.what}</div><div class="band">${cell(L, 0)}${cell(L, 1)}</div>${res(L)}</div>`);
   const guide = FSEL && FSEL.n ? `<b>${FSEL.n}</b> を どこに 置く？ 布の 欄を タップ`
     : FSEL ? `<b>${LNAME[FSEL.k]}の ${PART[FSEL.i]}</b>に 置く子を、てもちから タップ（点滅している 服）`
     : '① てもちの センモンを タップ　→　② 服か、布の 欄を タップ';
-  return `<div class="fwrap${FSEL && FSEL.n ? ' aiming' : ''}" id="fboard"><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>${guide}</span></p>
+  return `<div class="fwrap${FSEL && FSEL.n ? ' aiming' : ''}" id="fboard"><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>${guide}</span></p>
     <div class="ftorso">${torsoSvg(o)}<p class="tcap">服を タップしても えらべる${o.yukata ? `<br>ゆかた：${o.yukata === 'R' ? '右前' : '左前'}（前から 見ると 衿が「y」の字）` : ''}</p></div>
-    <div class="fleft"><div class="board"><div class="edge"><span class="material-symbols-outlined">visibility</span>そと（人から 見える）</div>${o.layers.map(layer).join('')}<div class="edge body"><span class="material-symbols-outlined">accessibility_new</span>からだ（肌）</div></div></div>
+    <div class="fleft"><div class="board"><div class="edge"><span class="material-symbols-outlined" aria-hidden="true">visibility</span>そと（人から 見える）</div>${o.layers.map(layer).join('')}<div class="edge body"><span class="material-symbols-outlined" aria-hidden="true">accessibility_new</span>からだ（肌）</div></div></div>
     <div class="fright"><p class="hhead">てもち</p>${PARTY.map((s) => `<div class="hcard${FSEL && FSEL.n === s.name ? ' sel' : ''}" data-n="${s.name}"><img src="${faceUrl(s)}" alt=""><div><b>${s.name}</b><br><small>${s.fib}</small><div class="hs">${o.hand.map((k) => `<span${hi.includes(k) ? ' class="on"' : ''}>${STAT[k]} ${SYM[FIB[s.fib].st[k]]}</span>`).join('')}</div>${at(s.name) ? `<div class="where">${at(s.name)}に いる</div>` : ''}</div></div>`).join('')}</div></div>`;
 }
 function bindBoard(o, redraw) {
@@ -2515,7 +2525,7 @@ function openTrip() {
     const st = tripSteps(ev, ch), last = st[n - 1], waiting = last && last.ev && ch[last.ev] == null;
     openSheet(`<h2>③ 旅：式の日</h2><p class="sub">${gl('しずく時計：しずくが1つ落ちるたびに、1日の時間が 少し進む。仕立てた服で、おばあさんの1日が どうなるかを 先に たしかめる')}（${q.tries}回目）。とちゅうで、おばあさんの行動を選ぶ</p>
       <div class="tripwrap"><div class="tclock">${dropClock(st, n, shown)}
-        <div class="tbtn">${waiting ? '<p class="sub">出来事：おばあさんの 行動を えらぼう</p>' : n < st.length ? '<button class="main" id="bDrop"><span class="material-symbols-outlined">water_drop</span>しずくを落とす</button>' : '<button class="main" id="bLook">④ ふりかえりへ</button>'}</div></div>
+        <div class="tbtn">${waiting ? '<p class="sub">出来事：おばあさんの 行動を えらぼう</p>' : n < st.length ? '<button class="main" id="bDrop"><span class="material-symbols-outlined" aria-hidden="true">water_drop</span>しずくを落とす</button>' : '<button class="main" id="bLook">④ ふりかえりへ</button>'}</div></div>
       <div class="tlog">${n ? '' : '<p class="sub">しずくを 落とすと、朝から 始まる</p>'}
       ${st.slice(0, n).map((s) => (s.ev
         ? (ch[s.ev] == null ? `<div class="evq"><b>${s.name}</b><br>${gl(s.q)}<div class="asks">${s.opts.map((o, j) => `<button data-e="${s.ev}" data-j="${j}">${o}</button>`).join('')}</div></div>`
@@ -2861,7 +2871,7 @@ function openPTrip() {
     openSheet(`<h2>れんしゅう：${PQ.name}</h2><p class="sub">③ 旅</p>
       ${coach(aiNm(), aiSnd() + 'これが ギルドの しずく時計。しずくが 1つ 落ちるたびに、1日の時間が 少し 進むよ。仕立てた服で、その人の1日が どうなるか、先に たしかめられるんだ。時計の 下の ボタンで、しずくを 落としてみて！')}
       <div class="tripwrap"><div class="tclock">${dropClock(st, n, shown)}
-        <div class="tbtn">${n < st.length ? '<button class="main" id="bDrop"><span class="material-symbols-outlined">water_drop</span>しずくを落とす</button>' : '<button class="main" id="bLook">④ ふりかえりへ</button>'}</div></div>
+        <div class="tbtn">${n < st.length ? '<button class="main" id="bDrop"><span class="material-symbols-outlined" aria-hidden="true">water_drop</span>しずくを落とす</button>' : '<button class="main" id="bLook">④ ふりかえりへ</button>'}</div></div>
       <div class="tlog">${n ? '' : '<p class="sub">しずくを 落とすと、朝から 始まる</p>'}
       ${st.slice(0, n).map((s) => `<div class="scene"><b>${s.name}</b>${s.judge ? `　<span class="chip ${s.ok ? 'ok' : 'ng'}">${s.ok ? 'ねがいに合っている' : 'まだ'}</span>` : ''}<br><span class="voice">なかま「${gl(s.judge ? s.msg : s.narr)}」</span></div>`).join('')}
       ${n === st.length ? coach(aiNm(), aiSnd() + 'これで 1日 おしまい。町の依頼では、とちゅうで 依頼人の 行動を えらぶ 出来事も あるよ。') : ''}</div></div>`, true);
@@ -2905,7 +2915,7 @@ const HELP = [
   { h: '① 聞き込み', who: 'ツムギ', say: '聞ける数は 決まっている。何を 聞くか、よく えらぼう。',
     body: '<ul><li>「ようす」：その日の 予定や 場所。どんな能力が 要るかが 分かる</li><li>「気持ち」：依頼人の 心配や、大事にしているもの</li><li>聞いたことは「依頼メモ」に のる</li><li>聞けなかったことは、旅で 分かることも ある</li></ul>' },
   { h: '② フォーメーション', who: 'メジャ丸', say: 'シュルルッ……センモンを 布の 欄に 置いて、服を 仕立てるよ！',
-    body: `<div class="hdemo"><div class="hd-t"></div><div class="board demo"><div class="edge"><span class="material-symbols-outlined">visibility</span>そと（人から 見える）</div>${[['外側', '上着など'], ['まん中', 'セーターなど'], ['肌側', '肌着など']].map(([n, w]) => `<div class="layer"><div class="lhead"><b>${n}</b>　${w}</div><div class="band"><div class="cell main"><span class="pct">65%</span><span>おもな センモン</span></div><div class="cell mix"><span class="pct">35%</span><span>まぜる センモン</span></div></div></div>`).join('')}<div class="edge body"><span class="material-symbols-outlined">accessibility_new</span>からだ（肌）</div></div></div>
+    body: `<div class="hdemo"><div class="hd-t"></div><div class="board demo"><div class="edge"><span class="material-symbols-outlined" aria-hidden="true">visibility</span>そと（人から 見える）</div>${[['外側', '上着など'], ['まん中', 'セーターなど'], ['肌側', '肌着など']].map(([n, w]) => `<div class="layer"><div class="lhead"><b>${n}</b>　${w}</div><div class="band"><div class="cell main"><span class="pct">65%</span><span>おもな センモン</span></div><div class="cell mix"><span class="pct">35%</span><span>まぜる センモン</span></div></div></div>`).join('')}<div class="edge body"><span class="material-symbols-outlined" aria-hidden="true">accessibility_new</span>からだ（肌）</div></div></div>
       <ul><li>服（トルソー）：外側＝上着（ゆかたの 依頼では ゆかた）、肌側＝肌着。えらんだ 服が 点滅する。服を タップしても えらべる</li><li>重ね着：肌に ふれる 肌側の布から、上へ 布を 重ねる。依頼によって、使う 布が ちがう</li><li>混用：1まいの布に、2つの センモンを まぜる。おもな センモンが 65%・まぜる センモンが 35%（色の はば）。まぜると、おもな センモンの 苦手が 1段 上がる</li><li>置き方：てもちを タップ → 布の 欄を タップ。×で はずす</li><li>◎○△ は 表1の記号。布の下に、この依頼で 見る所と タグが 出る</li><li>最後に、組み方の 理由を 1つ えらぶ</li></ul>` },
   { h: '③ 旅（しずく時計）', who: 'アイロ', say: 'シュー……しずく時計は、ギルドの ふしぎな時計。しずくが 1つ 落ちるたびに、1日の時間が 少し 進むんだ。',
     track: [{ short: '朝' }, { short: '昼' }, { short: '午後' }, { short: '放課後' }],
@@ -3014,7 +3024,7 @@ const MockApi = {
 // ★ どちらを 使うかの 判定は ここだけ（コードビューアの 描画は google.script.run が ダミーなので、gas-app 版で なければ Mock）
 const IS_GAS = BUILD_GAS && typeof google !== 'undefined' && !!(google.script && google.script.run);
 let Api = IS_GAS ? GasApi : MockApi;
-const TEACH_UI = () => Api.kind === 'mock' && !TAIKEN;   // ゲームの 中の「先生用」は デモだけ（本番は 先生の 画面 ?mode=teacher）
+const TEACH_UI = () => Api.kind === 'mock' && !TAIKEN && (!BUILD_GAS || TEACHER_PLAY);   // ゲームの 中の「先生用」は Mac の 模型と、本番で 先生が ためす ときだけ（生徒には 出さない。本番は 先生の 画面 ?mode=teacher）
 // 上げる 絵の きまり（ブラウザでも サーバーでも 同じ）
 function checkSenmonUp(o) {
   if (!o || !o.name || !FIB[o.fiber] || !(o.hue >= 0 && o.hue < 12)) return '名前・繊維・色を えらんでね';
@@ -3055,8 +3065,8 @@ function openMineImg() {
   const m = S.mine; if (!m) return;
   let pick = null;
   const draw = () => {
-    openSheet(`<h2>自分の センモンの 絵</h2><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>Canva で かいた 絵（PNG・JPEG）を えらんで「この 絵に する」</span></p>
-      <div class="mineBox"><img src="${cardCanvas(Object.assign({}, m, { imgEl: pick ? pick.el : m.imgEl })).toDataURL()}" alt=""><div><label class="fileBtn"><input type="file" id="mImg" accept="image/png,image/jpeg"><span class="material-symbols-outlined">add_photo_alternate</span>絵を えらぶ</label>
+    openSheet(`<h2>自分の センモンの 絵</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>Canva で かいた 絵（PNG・JPEG）を えらんで「この 絵に する」</span></p>
+      <div class="mineBox"><img src="${cardCanvas(Object.assign({}, m, { imgEl: pick ? pick.el : m.imgEl })).toDataURL()}" alt=""><div><label class="fileBtn"><input type="file" id="mImg" accept="image/png,image/jpeg"><span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>絵を えらぶ</label>
       <p class="berr" id="mErr"></p><p class="sub" style="margin:4px 0">絵は 正方形に 切りぬいて、小さく してから 送る</p></div></div>
       <div class="row"><button id="bBack">もどる</button><button class="main" id="bUp"${pick ? '' : ' disabled'}>この 絵に する</button></div>`);
     $('#mImg').onchange = async (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; try { pick = await shrinkImage(f); draw(); } catch (er) { $('#mErr').textContent = er.message; } };
@@ -3172,16 +3182,17 @@ async function startUp() {
   let done = false;
   const rescue = setTimeout(() => {
     if (done) return;
-    homeMsg(`<p class="lead">つながるのに 時間が かかっています…</p><div class="rescue">学校の アカウントで 開いているか、インターネットに つながっているかを 確かめよう。待つと そのまま はじまる ことも あるよ。
-      <div class="hbtns"><button id="rDemo">デモで 起動（きろくは この ブラウザだけ）</button></div></div>`);
-    $('#rDemo').onclick = () => { done = true; useDemo('3秒で 返らない'); };
+    // 本番（GAS）では「デモで 起動」を 出さない（クロスレビュー 2026-10-26：押すと きろくが 先生に 届かず、先生用まで 出る）。待てば そのまま はじまる
+    homeMsg(`<p class="lead">つながるのに 時間が かかっています…</p><div class="rescue">学校の アカウントで 開いているか、インターネットに つながっているかを 確かめよう。待つと そのまま はじまる ことも あるよ。${BUILD_GAS ? '<br>しばらく 待っても はじまらないときは、先生に 知らせよう。' : ''}
+      ${BUILD_GAS ? '' : '<div class="hbtns"><button id="rDemo">デモで 起動（きろくは この ブラウザだけ）</button></div>'}</div>`);
+    if (!BUILD_GAS) $('#rDemo').onclick = () => { done = true; useDemo('3秒で 返らない'); };
   }, 3000);
   let me;
   try { me = await Api.getMe(); } catch (e) { me = { success: false, message: e.message }; }
   if (done) return; done = true; clearTimeout(rescue);
   if (!me || !me.success) {
-    homeMsg(`<p class="lead">ゲームを はじめられませんでした</p><div class="rescue">${esc((me && me.message) || 'サーバーに つながらない')}<div class="hbtns"><button id="rAgain">もう一度</button><button id="rDemo">デモで 起動</button></div></div>`);
-    $('#rAgain').onclick = () => startUp(); $('#rDemo').onclick = () => useDemo(me && me.message);
+    homeMsg(`<p class="lead">ゲームを はじめられませんでした</p><div class="rescue">${esc((me && me.message) || 'サーバーに つながらない')}${BUILD_GAS ? '<br>「もう一度」で だめなときは、先生に 知らせよう（下の「デバッグログを表示」を 先生に 見せる）。' : ''}<div class="hbtns"><button id="rAgain">もう一度</button>${BUILD_GAS ? '' : '<button id="rDemo">デモで 起動</button>'}</div></div>`);
+    $('#rAgain').onclick = () => startUp(); if (!BUILD_GAS) $('#rDemo').onclick = () => useDemo(me && me.message);
     return;
   }
   if (me.role === 'teacher' && Api.kind === 'gas') { useDemo('先生の アカウント'); TEACHER_PLAY = true; return; }
@@ -3266,11 +3277,11 @@ const CALM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let READY = false, TYPE = null;
 const READY_Q = [], whenReady = (f) => (READY ? f() : READY_Q.push(f));
 function introArt(k) {
-  if (k === 'quilt') return `<span class="material-symbols-outlined cl" style="left:8%;top:6%">cloud</span><span class="material-symbols-outlined cl" style="right:12%;top:2%;font-size:34px">cloud</span>
+  if (k === 'quilt') return `<span class="material-symbols-outlined cl" aria-hidden="true" style="left:8%;top:6%">cloud</span><span class="material-symbols-outlined cl" aria-hidden="true" style="right:12%;top:2%;font-size:34px">cloud</span>
     <div class="quilt">${Array.from({ length: 60 }, (_, i) => `<i style="background:${hueCss((i * 5 + ((i / 10) | 0) * 7) % 12, 76)}"></i>`).join('')}</div>`;
-  if (k === 'senmon') return [['eco', '植物の平原', '植物'], ['pets', '動物の高原', '動物'], ['science', '化学の都', '合成']].map(([ic, nm, ty]) => `<div class="region"><span class="material-symbols-outlined" style="color:${TYPE_COLOR[ty]}">${ic}</span>${nm}</div>`).join('')
+  if (k === 'senmon') return [['eco', '植物の平原', '植物'], ['pets', '動物の高原', '動物'], ['science', '化学の都', '合成']].map(([ic, nm, ty]) => `<div class="region"><span class="material-symbols-outlined" aria-hidden="true" style="color:${TYPE_COLOR[ty]}">${ic}</span>${nm}</div>`).join('')
     + `<div class="faces">${ALL_SENMON.slice(0, 4).map((x) => `<img src="${faceUrl(x)}" alt="">`).join('')}</div>`;
-  return '<div class="guildArt"><div class="ring"><span class="material-symbols-outlined">storefront</span></div>イトマキ町の 仕立て屋ギルド</div>';
+  return '<div class="guildArt"><div class="ring"><span class="material-symbols-outlined" aria-hidden="true">storefront</span></div>イトマキ町の 仕立て屋ギルド</div>';
 }
 // 語りを 1文字ずつ。押すと すぐ 全部 出る。出きったら ▼
 function typeLines(el, lines, done) {
@@ -3293,7 +3304,7 @@ function openHome(mode) {
   $('#home').innerHTML = `<div class="homeCard"><p class="kick">布の大陸ファブリアの ぼうけん${Api.kind === 'gas' ? `（${esc(ME && ME.label || '')}）` : '（見本）'}</p><h1>センモン大冒険</h1>
     <p class="lead">見習いの 仕立て屋に なって、センモンと いっしょに、町の人の 服の こまりごとを 助けよう</p>
     <div class="hfaces">${team.map((x) => `<img src="${faceUrl(x)}" alt="${x.name}">`).join('')}</div>${body}
-    ${Api.kind === 'gas' ? '<p class="hnote"><span class="material-symbols-outlined">save</span>きろくは、学校の アカウントに 自動で のこります</p>' : canSave() ? '<p class="hnote"><span class="material-symbols-outlined">save</span>きろくは、この ブラウザに 自動で のこります</p>' : '<p class="hnote warn"><span class="material-symbols-outlined">warning</span>この ブラウザでは、きろくが のこりません（シークレット ウィンドウなど）。ふつうの ウィンドウで ひらこう</p>'}${READY ? '' : '<p class="hwait" id="hWait">せかいを じゅんびしています…</p>'}<p class="hnote" style="margin-top:4px"><button class="dbgLink" onclick="showDebug()">デバッグログを表示</button></p></div>`;
+    ${Api.kind === 'gas' ? '<p class="hnote"><span class="material-symbols-outlined" aria-hidden="true">save</span>きろくは、学校の アカウントに 自動で のこります</p>' : canSave() ? '<p class="hnote"><span class="material-symbols-outlined" aria-hidden="true">save</span>きろくは、この ブラウザに 自動で のこります</p>' : '<p class="hnote warn"><span class="material-symbols-outlined" aria-hidden="true">warning</span>この ブラウザでは、きろくが のこりません（シークレット ウィンドウなど）。ふつうの ウィンドウで ひらこう</p>'}${READY ? '' : '<p class="hwait" id="hWait">せかいを じゅんびしています…</p>'}<p class="hnote" style="margin-top:4px"><button class="dbgLink" onclick="showDebug()">デバッグログを表示</button></p></div>`;
   if ($('#hStart')) $('#hStart').onclick = () => homeIntro(0);
   if ($('#hBack')) $('#hBack').onclick = () => openHome();
   if ($('#hNew')) $('#hNew').onclick = () => openHome('new');
@@ -3324,10 +3335,10 @@ function openTaikenHome() {
   $('#home').innerHTML = `<div class="homeCard"><p class="kick">授業用ゲームの 見本（中学2年 家庭分野「衣生活」）</p><h1>センモン大冒険<span class="tkTag">体験版</span></h1>
     <p class="lead">見習いの 仕立て屋に なって、繊維から 生まれた なかま「センモン」と いっしょに、町の人の 服の こまりごとを 助けよう</p>
     <div class="hfaces">${ALL_SENMON.slice(0, 4).map((x) => `<img src="${faceUrl(x)}" alt="${x.name}">`).join('')}</div>
-    <div class="hbtns"><button class="main" id="tkCh"><span class="material-symbols-outlined">menu_book</span>章を えらんで 体験</button><button id="tkStart">はじめから 遊ぶ（オープニングから）</button>${d ? '<button id="tkCont">つづきから</button>' : ''}</div>
+    <div class="hbtns"><button class="main" id="tkCh"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span>章を えらんで 体験</button><button id="tkStart">はじめから 遊ぶ（オープニングから）</button>${d ? '<button id="tkCont">つづきから</button>' : ''}</div>
     <details class="tkAbout"><summary>この単元の 流れ（試す 先生へ）</summary><table class="tb"><tr><th>章</th><th>授業</th><th>ゲームで すること</th></tr>${TAIKEN_CH.map((x) => `<tr><td>${x.t}</td><td>${x.when}</td><td>${x.learn}</td></tr>`).join('')}</table>
       <p>全11〜12時間。ゲームは 各時間の 10〜15分で、体操服の タグ・布・洗剤など 教室の 実物で 確かめる 活動と 組み合わせる。章は 授業で 先生が ひらく（体験版では 全部 ひらいてある）。判定は「ねがいに 合っている／まだ」で、答えでは なく 見る所の 手がかりを 出す。</p></details>
-    <p class="hnote"><span class="material-symbols-outlined">info</span>名前・せりふは 仮。きろくは この ブラウザの 中だけで、外へは 送りません</p>${READY ? '' : '<p class="hwait" id="hWait">せかいを じゅんびしています…</p>'}</div>`;
+    <p class="hnote"><span class="material-symbols-outlined" aria-hidden="true">info</span>名前・せりふは 仮。きろくは この ブラウザの 中だけで、外へは 送りません</p>${READY ? '' : '<p class="hwait" id="hWait">せかいを じゅんびしています…</p>'}</div>`;
   $('#tkCh').onclick = openTaikenChapters;
   $('#tkStart').onclick = () => homeIntro(0);
   if ($('#tkCont')) $('#tkCont').onclick = () => { $('#tkCont').disabled = true; whenReady(() => { applySave(d); homeFly(`おかえり、${esc(d.name)} さん。イトマキ町へ もどろう。`, () => { toast(`おかえり、${S.name} さん`); if (!checkChapterIntro()) renderQuest(); }); }); };
@@ -3336,7 +3347,7 @@ function openTaikenHome() {
 function openTaikenChapters() {
   $('#home').innerHTML = `<div class="homeCard tkCh"><h2 class="tkH">章を えらんで 体験</h2>
     <p class="sub">その章の はじめから 入ります。名前は「たいけん」。それまでの ギルドの印・なかま・自分の センモンは 用意して あります（相棒は メジャ丸。序章で ほかの 相棒も 選べます）</p>
-    <div class="tkGrid">${TAIKEN_CH.map((x) => `<button class="tkCard" data-k="${x.k}"><span class="material-symbols-outlined">${x.ic}</span><b>${x.t}</b><small>${x.when}・ゲームは 約${x.min}分</small><span class="tkL">${x.learn}</span></button>`).join('')}</div>
+    <div class="tkGrid">${TAIKEN_CH.map((x) => `<button class="tkCard" data-k="${x.k}"><span class="material-symbols-outlined" aria-hidden="true">${x.ic}</span><b>${x.t}</b><small>${x.when}・ゲームは 約${x.min}分</small><span class="tkL">${x.learn}</span></button>`).join('')}</div>
     <div class="hbtns"><button id="tkBack">題の 画面へ</button></div></div>`;
   $('#home').querySelectorAll('[data-k]').forEach((b) => (b.onclick = () => goTaiken(b.dataset.k)));
   $('#tkBack').onclick = openTaikenHome; $('#home').querySelector('[data-k]').focus();
@@ -3551,7 +3562,7 @@ function renderQuest() {
 const WHO_C = { 'ツムギ': '#c8553d', 'マトイ': '#8a5a33', 'メジャ丸': '#b8860b', 'ピンコ': '#c2577a', 'アイロ': '#3a7ca5', 'ボロンの手紙': '#7a6fb0', 'アセジミン': '#b08a2e', 'アブラーン': '#b08a2e', 'ボタンポロリ': '#7a6fb0', 'ホツレン': '#7a6fb0', '町の子': '#5f9e3c' };
 function lnHtml(l, isNew) {
   const nw = isNew ? ' new' : '';
-  if (l.scr) return `<p class="scr${nw}"><span class="material-symbols-outlined">movie</span><span>${gl(fill(l.scr))}</span></p>`;
+  if (l.scr) return `<p class="scr${nw}"><span class="material-symbols-outlined" aria-hidden="true">movie</span><span>${gl(fill(l.scr))}</span></p>`;
   if (l.html) return `<div class="art${nw}">${l.html}</div>`;
   const who = l.who === 'me' ? nm() : esc(l.who);
   return `<p class="ln${nw}" style="--c:${WHO_C[l.who] || 'var(--ai)'}"><b>${who}</b>「${gl(fill(l.t))}」</p>`;
@@ -3560,20 +3571,20 @@ function lnHtml(l, isNew) {
 const WHO_PT = { 'ツムギ': 'tsumugi', 'ギルド長ツムギ': 'tsumugi', 'マトイ': 'matoi', 'ボロン': 'boron', '式典の町のおばあさん': 'granny', 'おばあさん': 'granny', '峠の ゆうびん屋さん': 'post', 'ゆうびん屋さん': 'post', '夏祭りの村の ヒナタ': 'matsuri', 'ヒナタ': 'matsuri' };
 const ptImg = (k, bg) => (PORTRAIT[k] ? `<img class="bdg pt" src="${PORTRAIT[k]}" alt="" style="background:${bg}">` : '');
 function badgeHtml(l) {
-  if (l.who === 'me') return ptImg('me', '#dbe8f5') || '<span class="bdg" style="background:#5f8fc0"><span class="material-symbols-outlined">person</span></span>';
+  if (l.who === 'me') return ptImg('me', '#dbe8f5') || '<span class="bdg" style="background:#5f8fc0"><span class="material-symbols-outlined" aria-hidden="true">person</span></span>';
   const pk = WHO_PT[l.who] || (Object.keys(TOWN_TALK).find((k) => TOWN_TALK[k].name === l.who));
   if (pk && PORTRAIT[pk]) return ptImg(pk, '#f3ead2');
   const sen = (S.mine && S.mine.name === l.who) ? S.mine : ALL_SENMON.find((x) => x.name === l.who);
   if (sen) return `<img class="bdg" src="${faceUrl(sen)}" alt="">`;
   const ak = Object.keys(AIBO_NM).find((k) => AIBO_NM[k] === l.who);
-  if (ak) return ptImg('ai_' + ak, AIBO_CARD[ak].bg + '55') || `<span class="bdg" style="background:${AIBO_CARD[ak].bg}"><span class="material-symbols-outlined">${AIBO_CARD[ak].ic}</span></span>`;
+  if (ak) return ptImg('ai_' + ak, AIBO_CARD[ak].bg + '55') || `<span class="bdg" style="background:${AIBO_CARD[ak].bg}"><span class="material-symbols-outlined" aria-hidden="true">${AIBO_CARD[ak].ic}</span></span>`;
   return `<span class="bdg" style="background:${WHO_C[l.who] || '#7a8296'}">${esc(String(l.who).charAt(0))}</span>`;
 }
 const whoName = (l) => (l.who === 'me' ? nm() : esc(l.who));
 const lineHtml = (l) => (l.scr ? gl(fill(l.scr)) : `「${gl(fill(l.t))}」`);
 function nowHtml(l) {
   if (l.html) return `<div class="art">${l.html}</div>`;
-  if (l.scr) return `<div class="sdir"><span class="material-symbols-outlined">movie</span><p class="txt"></p></div>`;
+  if (l.scr) return `<div class="sdir"><span class="material-symbols-outlined" aria-hidden="true">movie</span><p class="txt"></p></div>`;
   return `<div class="spk">${badgeHtml(l)}<div class="bub"><span class="tape" style="--c:${WHO_C[l.who] || 'var(--ai)'}">${whoName(l)}</span><p class="txt"></p></div></div>`;
 }
 const pastHtml = (l) => (l.html ? '' : l.scr ? `<p>${lineHtml(l)}</p>` : `<p><b>${whoName(l)}</b>${lineHtml(l)}</p>`);
@@ -3585,7 +3596,7 @@ function talkSeq(title, lines, onEnd, endLabel = 'つぎへ') {
   const draw = (instant) => {
     const l = lines[n], last = n === lines.length - 1;
     openSheet(`<h2>${title}</h2><div class="story"><div class="past">${lines.slice(Math.max(0, n - 2), n).map(pastHtml).join('')}</div><div class="now" id="sNow">${nowHtml(l)}</div></div>
-      <div class="row storyrow"><button id="bLog" title="これまでの話" aria-label="これまでの話"><span class="material-symbols-outlined">history</span><span class="hideS">これまでの話</span></button><span class="pager">${n + 1} / ${lines.length}</span>${n ? '<button id="bBack">もどる</button>' : ''}<button class="main" id="bSeq">${last ? endLabel : 'つぎへ ▼'}</button></div>`, 'story');
+      <div class="row storyrow"><button id="bLog" title="これまでの話" aria-label="これまでの話"><span class="material-symbols-outlined" aria-hidden="true">history</span><span class="hideS">これまでの話</span></button><span class="pager">${n + 1} / ${lines.length}</span>${n ? '<button id="bBack">もどる</button>' : ''}<button class="main" id="bSeq">${last ? endLabel : 'つぎへ ▼'}</button></div>`, 'story');
     const el = $('#sheet .story .txt');
     if (el) {
       const full = lineHtml(l), tmp = document.createElement('div'); tmp.innerHTML = full; const plain = tmp.textContent;
@@ -3640,9 +3651,9 @@ function jo3() {
   };
   const draw = () => {
     openSheet(`<h2>どうぐ箱 ── 相棒を えらぶ</h2>${lnHtml({ scr: '古い 木の どうぐ箱の ふたが 開く。中から 3つの 道具が、それぞれの しかたで 出てくる' })}
-      <p class="guide"><span class="material-symbols-outlined">touch_app</span><span>${pick ? `<b>${AIBO_NM[pick]}</b>の あいさつ。この子で よければ「${AIBO_NM[pick]}に する」。ほかの子も 押して くらべられる` : 'いっしょに 旅を する 相棒を 1つ えらぼう。カードを 押すと、その子の あいさつが 聞ける'}</span></p>
+      <p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>${pick ? `<b>${AIBO_NM[pick]}</b>の あいさつ。この子で よければ「${AIBO_NM[pick]}に する」。ほかの子も 押して くらべられる` : 'いっしょに 旅を する 相棒を 1つ えらぼう。カードを 押すと、その子の あいさつが 聞ける'}</span></p>
       <div class="aibos big">${Object.entries(AIBO_CARD).map(([k, a]) => `<div class="aibo${pick === k ? ' sel' : ''}" data-k="${k}" tabindex="0" role="button" aria-label="${AIBO_NM[k]}の あいさつを 聞く">
-        ${PORTRAIT['ai_' + k] ? `<img class="aiimg" src="${PORTRAIT['ai_' + k]}" alt="${AIBO_NM[k]}の 姿" style="background:${a.bg}40">` : `<div class="ic" style="background:${a.bg}"><span class="material-symbols-outlined">${a.ic}</span></div>`}
+        ${PORTRAIT['ai_' + k] ? `<img class="aiimg" src="${PORTRAIT['ai_' + k]}" alt="${AIBO_NM[k]}の 姿" style="background:${a.bg}40">` : `<div class="ic" style="background:${a.bg}"><span class="material-symbols-outlined" aria-hidden="true">${a.ic}</span></div>`}
         <b>${AIBO_NM[k]}</b><small>${a.tool}の 相棒</small>
         <dl><dt>口ぐせ</dt><dd>${AIBO_SND[k].trim()}</dd><dt>大事に していること</dt><dd>${AIBO_VALUE[k]}</dd></dl>
         ${pick === k ? `<p class="hello">「${a.t}」</p><button class="main" data-ok="${k}">${AIBO_NM[k]}に する</button>` : '<span class="hint">押して あいさつを 聞く</span>'}</div>`).join('')}</div>
@@ -3661,7 +3672,7 @@ function jo3() {
 // 場面4 入門試験：はじめに ゲームを 止めて、教室で 体操服・制服の タグを 読む
 function jo4() {
   openSheet(`<h2>入門試験 ── タグを読む</h2>${say('ツムギ', '入門試験だよ。……と、その前に。')}${say('ツムギ', 'きみの 世界にも、服が あるだろう？ その服の タグを、先に 読んでおいで。')}
-    <div class="pause"><div class="pt"><span class="material-symbols-outlined">pause_circle</span>ここで ゲームを 止めて、教室で たしかめよう</div>
+    <div class="pause"><div class="pt"><span class="material-symbols-outlined" aria-hidden="true">pause_circle</span>ここで ゲームを 止めて、教室で たしかめよう</div>
     <ul><li>体操服・制服の えりや 脇の タグを、となり同士で 読む（自分の服は ぬがない。見える所だけ）</li><li>綿・毛・ポリエステルの 布に さわる（手ざわり・のび・重さ）</li><li>ワークシートに、タグに 書いてあったことを 全部 書き写す</li></ul></div>
     <div class="row"><button id="bClose">あとで</button><button class="main" id="bBack">たしかめた！ ゲームに もどる</button></div>`);
   $('#bBack').onclick = () => { S.story.jo = 'exam2'; jo4exam(); }; $('#bClose').onclick = closeSheet; $('#bBack').focus();
@@ -3677,11 +3688,11 @@ function jo4exam() {
   const all = EXAM.every((_, i) => pick[i]);
   const hint = S.story.examHint ? `<div class="hintbox"><b>${AIBO_NM[S.aibo]}</b>「${gl(ai({ meja: 'シュルルッ！ 手帳の いちばん左の列を、上から順に はかってみよう。「綿」は 何行め？', pinko: 'チクッ！ 手帳の「綿」の行に ピンを さしたよ！ その行の いちばん左を 見て！', iro: 'シュー……。だいじょうぶ。手帳の 左はしに「植物」「動物」って 書いてあるよ。あわてず、ゆっくり 見てね。' }).t)}」</div>` : '';
   openSheet(`<h2>入門試験 ── タグを読む</h2>${say('ツムギ', 'おかえり。では 入門試験だよ。服の タグを 読んで、その 繊維の ふるさとを 当ててごらん。')}${say('ツムギ', 'さっき 読んだ タグと、同じように 読めば いいよ。')}
-    <p class="guide"><span class="material-symbols-outlined">touch_app</span><span>3着の タグを 読んで、それぞれの ふるさとを えらぼう（教科書の 表1を 見てよい）</span></p>
-    <div class="exam">${EXAM.map((x, i) => `<div class="erow"><div class="who"><span class="material-symbols-outlined" style="color:${x.col}">apparel</span><span>${x.n}<br><span class="ctag">${x.tag}</span></span></div>
-      <div class="opts">${HOME3.map(([k, ic, n]) => `<button data-i="${i}" data-k="${k}" class="${pick[i] === k ? 'pick' : ''}"><span class="material-symbols-outlined">${ic}</span>${n}</button>`).join('')}${shown && pick[i] && pick[i] !== x.a ? '<span class="chip ng">まだ</span>' : ''}</div></div>`).join('')}</div>
+    <p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>3着の タグを 読んで、それぞれの ふるさとを えらぼう（教科書の 表1を 見てよい）</span></p>
+    <div class="exam">${EXAM.map((x, i) => `<div class="erow"><div class="who"><span class="material-symbols-outlined" aria-hidden="true" style="color:${x.col}">apparel</span><span>${x.n}<br><span class="ctag">${x.tag}</span></span></div>
+      <div class="opts">${HOME3.map(([k, ic, n]) => `<button data-i="${i}" data-k="${k}" class="${pick[i] === k ? 'pick' : ''}"><span class="material-symbols-outlined" aria-hidden="true">${ic}</span>${n}</button>`).join('')}${shown && pick[i] && pick[i] !== x.a ? '<span class="chip ng">まだ</span>' : ''}</div></div>`).join('')}</div>
     ${hint}${S.story.examMiss ? `<p class="ln" style="--c:var(--ai)"><b>${AIBO_NM[S.aibo]}</b>「${gl(S.story.examMiss)}」</p>` : ''}
-    <div class="row"><button id="bHint"><span class="material-symbols-outlined" style="font-size:18px;vertical-align:-4px">lightbulb</span> ${AIBO_NM[S.aibo]}に きく</button><button class="main" id="bChk"${all ? '' : ' disabled'}>こたえあわせ</button></div>`, true);
+    <div class="row"><button id="bHint"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px;vertical-align:-4px">lightbulb</span> ${AIBO_NM[S.aibo]}に きく</button><button class="main" id="bChk"${all ? '' : ' disabled'}>こたえあわせ</button></div>`, true);
   $('#sheet').querySelectorAll('.opts [data-i]').forEach((b) => (b.onclick = () => { pick[+b.dataset.i] = b.dataset.k; S.story.examChk = false; S.story.examMiss = null; jo4exam(); }));
   $('#bHint').onclick = () => { S.story.examHint = true; jo4exam(); };
   $('#bChk').onclick = () => {
@@ -3703,9 +3714,9 @@ function jo4ok() {
 }
 function mapHtml() {
   const P = (x, z) => `left:${50 + x * 0.68}%;top:${46 + z * 0.68}%`;
-  return `<div class="mapv">${HOME3.map(([k, ic, n]) => `<div class="mreg" style="${P(REGION[k].x, REGION[k].z)}"><span class="material-symbols-outlined" style="color:${TYPE_COLOR[{ plant: '植物', animal: '動物', chem: '合成' }[k]]}">${ic}</span>${n}<small>${{ plant: '綿・麻', animal: '毛・絹', chem: '合成の4つ' }[k]}</small></div>`).join('')}
-    <div class="mreg" style="${P(0, 0)}"><span class="material-symbols-outlined" style="color:var(--akane)">storefront</span>イトマキ町<small>ギルド</small></div>
-    <div class="mreg off" style="${P(0, 44)}"><span class="material-symbols-outlined">lock</span>商人の町<small>門が 閉じている</small></div></div>`;
+  return `<div class="mapv">${HOME3.map(([k, ic, n]) => `<div class="mreg" style="${P(REGION[k].x, REGION[k].z)}"><span class="material-symbols-outlined" aria-hidden="true" style="color:${TYPE_COLOR[{ plant: '植物', animal: '動物', chem: '合成' }[k]]}">${ic}</span>${n}<small>${{ plant: '綿・麻', animal: '毛・絹', chem: '合成の4つ' }[k]}</small></div>`).join('')}
+    <div class="mreg" style="${P(0, 0)}"><span class="material-symbols-outlined" aria-hidden="true" style="color:var(--akane)">storefront</span>イトマキ町<small>ギルド</small></div>
+    <div class="mreg off" style="${P(0, 44)}"><span class="material-symbols-outlined" aria-hidden="true">lock</span>商人の町<small>門が 閉じている</small></div></div>`;
 }
 function jo5() {
   renderQuest();
@@ -3756,7 +3767,7 @@ function openSpot(k) {
     { who: 'ツムギ', t: '……さ、こっちだよ。' },
     { scr: '扉の 前に、黄ばんだ 布の 切れはしが 落ちている' },
   ], () => {
-    openSheet(`<h2>ギルドの倉庫</h2>${lnHtml({ scr: '扉の 前に、黄ばんだ 布の 切れはしが 落ちている' })}<p class="guide"><span class="material-symbols-outlined">touch_app</span><span>ひろっても、そのまま 進んでも よい</span></p>
+    openSheet(`<h2>ギルドの倉庫</h2>${lnHtml({ scr: '扉の 前に、黄ばんだ 布の 切れはしが 落ちている' })}<p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>ひろっても、そのまま 進んでも よい</span></p>
       <div class="row"><button id="bLeave">そのまま 進む</button><button class="main" id="bPick">ひろう</button></div>`);
     const go = (picked) => {
       if (picked) addItem('kirehashi');
@@ -3843,11 +3854,11 @@ function birthStart() {
 const BIRTH = { fib: null, name: '', hue: null, img: null, imgEl: null };
 function openBirth() {
   const b = BIRTH, groups = [['植物', ['綿', '麻']], ['動物', ['毛', '絹']], ['合成', ['ポリエステル', 'ナイロン', 'アクリル', 'ポリウレタン']]];
-  openSheet(`<h2>センモン誕生</h2><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>① 担当の 繊維 → ② 名前 → ③ 布の色 を 決めて「生まれる！」</span></p>
+  openSheet(`<h2>センモン誕生</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>① 担当の 繊維 → ② 名前 → ③ 布の色 を 決めて「生まれる！」</span></p>
     <div class="birth"><div><p class="lab">① 担当の 繊維（教室で 決めたもの）</p><div class="fibs2">${groups.map(([ty, fs]) => `<div class="grp" style="--c:${TYPE_COLOR[ty]}"><span>${ty}</span>${fs.map((f) => `<button data-f="${f}">${f}</button>`).join('')}</div>`).join('')}</div>
       <p class="lab">② 名前（8文字まで）</p><input id="bName" maxlength="8" autocomplete="off" placeholder="センモンの 名前" value="${esc(b.name)}">
       <p class="lab">③ 布の色（色相環の 12色）</p><div class="hues">${Array.from({ length: 12 }, (_, h) => `<button data-h="${h}" style="background:${hueCss(h)}" aria-label="${HUE_NAME[h]}" title="${HUE_NAME[h]}"></button>`).join('')}</div>
-      ${TAIKEN ? '' : `<p class="lab">④ センモンの 絵（Canva で かいた 絵。あとからでも 上げられる）</p><div class="upl"><label class="fileBtn"><input type="file" id="bImg" accept="image/png,image/jpeg"><span class="material-symbols-outlined">add_photo_alternate</span>絵を えらぶ</label><span id="bImgSt" class="sub" style="margin:0">${b.img ? '絵を えらんだ' : 'えらばなければ、丸い 顔で 生まれる'}</span>${b.img ? '<button id="bImgX">絵を やめる</button>' : ''}</div>`}
+      ${TAIKEN ? '' : `<p class="lab">④ センモンの 絵（Canva で かいた 絵。あとからでも 上げられる）</p><div class="upl"><label class="fileBtn"><input type="file" id="bImg" accept="image/png,image/jpeg"><span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>絵を えらぶ</label><span id="bImgSt" class="sub" style="margin:0">${b.img ? '絵を えらんだ' : 'えらばなければ、丸い 顔で 生まれる'}</span>${b.img ? '<button id="bImgX">絵を やめる</button>' : ''}</div>`}
       <p class="berr" id="bErr"></p></div>
       <div class="bprev" id="bPrev"></div></div>
     <div class="row"><button id="bClose">あとで</button><button class="main" id="bGo" disabled>生まれる！</button></div>`, true);
@@ -3927,7 +3938,7 @@ function openNote(tab = 'nazo') {
   } else if (tab === 'items') {
     const mine = S.mine && S.mine !== ALL_SENMON[0] && !S.mine.sample ? S.mine : null;
     body = (mine ? `<div class="mineBox"><img src="${cardCanvas(mine).toDataURL()}" alt=""><div><b>自分の センモン「${esc(mine.name)}」</b><br><small>${mine.fib}・${HUE_NAME[mine.hue]}</small>
-      <p class="sub" style="margin:4px 0">${MY_HIDDEN ? '絵は、先生と 相談しよう（いまは 丸い 顔で 出ている）' : imgOk(mine) ? 'Canva の 絵が ついている' : 'まだ 絵が ない（丸い 顔）'}</p>${TAIKEN ? '' : `<button id="bMineImg">${imgOk(mine) ? '絵を 上げ直す' : '絵を 上げる'}</button>`}</div></div>` : '') + (S.items.length ? `<div class="items">${S.items.map((k) => `<div class="it"><span class="material-symbols-outlined">${ITEMS[k].ic}</span><span><b>${ITEMS[k].n}</b><br><small>${gl(ITEMS[k].d)}</small></span>${k === 'map' ? '<button id="bMap">見る</button>' : k === 'card' && S.story.card && S.story.card.done ? '<button id="bCard">見る</button>' : ''}</div>`).join('')}</div>` : '<p class="sub">まだ 何も ない</p>');
+      <p class="sub" style="margin:4px 0">${MY_HIDDEN ? '絵は、先生と 相談しよう（いまは 丸い 顔で 出ている）' : imgOk(mine) ? 'Canva の 絵が ついている' : 'まだ 絵が ない（丸い 顔）'}</p>${TAIKEN ? '' : `<button id="bMineImg">${imgOk(mine) ? '絵を 上げ直す' : '絵を 上げる'}</button>`}</div></div>` : '') + (S.items.length ? `<div class="items">${S.items.map((k) => `<div class="it"><span class="material-symbols-outlined" aria-hidden="true">${ITEMS[k].ic}</span><span><b>${ITEMS[k].n}</b><br><small>${gl(ITEMS[k].d)}</small></span>${k === 'map' ? '<button id="bMap">見る</button>' : k === 'card' && S.story.card && S.story.card.done ? '<button id="bCard">見る</button>' : ''}</div>`).join('')}</div>` : '<p class="sub">まだ 何も ない</p>');
   } else {
     const c = curCh();
     body = `<table class="tb"><tr><th>章</th><th>授業</th><th>ようす</th></tr>${CH.map((x, i) => `<tr${i === c ? ' style="background:#fbecc4"' : ''}><td>${x.name}「${x.title}」</td><td>${x.when}</td><td>${S.ch.done.includes(i) ? 'おわった' : i === c ? '<b style="color:var(--akane)">いま</b>' : i <= S.ch.open ? (READY_CH.includes(i) ? 'ひらいた' : '準備中（見本）') : 'まだ ひらいていない'}</td></tr>`).join('')}</table>
@@ -4054,7 +4065,7 @@ function c1Tsumugi() {
 function openTower() {
   const t = T1(), f = t.f;
   openSheet(`<h2>糸と布の塔</h2><p class="sub">センモンが 糸に なり、布に なる 塔。1階ずつ のぼろう</p>
-    <div class="floors">${[2, 1, 0].map((i) => `<div class="floor${i < f ? ' done' : i === f ? ' now' : ' lock'}"><span class="material-symbols-outlined">${i < f ? 'check_circle' : i === f ? C1_FLOORS[i].ic : 'lock'}</span><span><b>${C1_FLOORS[i].t}</b><br>${gl(C1_FLOORS[i].d)}</span><span class="st">${i < f ? 'できた' : i === f ? '<b style="color:var(--akane)">いま</b>' : 'まだ'}</span></div>`).join('')}</div><div class="towerBase"></div>
+    <div class="floors">${[2, 1, 0].map((i) => `<div class="floor${i < f ? ' done' : i === f ? ' now' : ' lock'}"><span class="material-symbols-outlined" aria-hidden="true">${i < f ? 'check_circle' : i === f ? C1_FLOORS[i].ic : 'lock'}</span><span><b>${C1_FLOORS[i].t}</b><br>${gl(C1_FLOORS[i].d)}</span><span class="st">${i < f ? 'できた' : i === f ? '<b style="color:var(--akane)">いま</b>' : 'まだ'}</span></div>`).join('')}</div><div class="towerBase"></div>
     ${f >= 3 ? `<p class="sub" style="text-align:center">ぜんぶの 階を のぼった！ 3階の 合体の 実験台は、何度でも つかえる（レシピ帳 ${t.rec.length}こ）</p>` : ''}
     <div class="row"><button id="bClose">塔を 出る</button>${f >= 3 ? '<button id="bLab">合体の 実験台</button><button class="main" id="bOut">ギルドへ 帰る</button>' : `<button class="main" id="bGo">${C1_FLOORS[f].t.split('　')[0]}へ のぼる</button>`}</div>`, true);
   $('#bClose').onclick = () => { closeSheet(); saveGame(); };
@@ -4065,7 +4076,7 @@ function openTower() {
 function towerF1() {
   const t = T1(), m = myS(), st = t.y, acts = ['繊維を 引きそろえる', 'よりを かける（ねじる）', 'もっと よりを かける'];
   openSheet(`<h2>1階　糸の階</h2>${lnHtml(ai({ meja: 'シュルルッ……ここは 糸の階。ばらばらの 繊維を、糸に するんだって！', pinko: 'チクッ！ ここは 糸の階！ ばらばらの 繊維を、ぴしっと 糸に するよ！', iro: 'シュー……ここは 糸の階。ばらばらの 繊維が、糸に なるんだ。' }))}
-    <p class="guide"><span class="material-symbols-outlined">touch_app</span><span>${st < 3 ? `下の ボタンを おして、${esc(m.name)}の 繊維を 糸に しよう（${st + 1}/3）` : '糸に なった！'}</span></p>
+    <p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>${st < 3 ? `下の ボタンを おして、${esc(m.name)}の 繊維を 糸に しよう（${st + 1}/3）` : '糸に なった！'}</span></p>
     <div class="yarn">${yarnSvg(st, m.hue)}</div>
     <div class="ysteps">${['繊維', '引きそろえる', 'よりを かける', '糸'].map((x, i) => `<span class="${i === st ? 'on' : i < st ? 'did' : ''}">${x}</span>`).join('<span>→</span>')}</div>
     ${st >= 3 ? `<div class="memo" style="margin-top:8px">${gl(`${esc(m.name)}の 繊維が、糸に なった（進化）！ 繊維を 引きそろえて ねじる（よりを かける）と、繊維どうしが からみあって、糸に なる。`)}</div>` : ''}
@@ -4076,17 +4087,17 @@ function towerF1() {
 }
 function towerF2() {
   const t = T1(), m = myS(), solved = C1_REQ.filter((q, i) => t.r[i] === q.ans).length;
-  const real = `<div class="real"><b><span class="material-symbols-outlined" style="font-size:18px;vertical-align:-4px">pan_tool</span> 教室の 布で たしかめよう</b>（ゲームを いったん とめて）
+  const real = `<div class="real"><b><span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px;vertical-align:-4px">pan_tool</span> 教室の 布で たしかめよう</b>（ゲームを いったん とめて）
     <ul><li>引っぱる：どの 布が よく のびる？</li><li>切り口を 見る・ほどく：糸が ほどけて 出てくる？</li><li>キットの フリースと フェルトも、さわって くらべよう</li></ul><p class="sub" style="margin:4px 0 0">わかったことは、ワークシートに 書こう</p></div>`;
   openSheet(`<h2>2階　布の階</h2><p class="sub">糸を 布に する。布の つくりは 3つ</p>
     <div class="cloths">${Object.keys(CLOTH).map((k) => { const v = (t.view || {})[k];
       const sws = k === 'ori' ? `<figure>${clothArt('ori', m.hue, v)}<figcaption>平織</figcaption></figure><figure>${clothArt('twill', m.hue, v)}<figcaption>あや織（斜文織）</figcaption></figure>` : `<figure>${clothArt(k, m.hue, v)}</figure>`;
-      return `<div class="cloth"><b>${gl(CLOTH[k].n)}</b><span class="lupe"><span class="material-symbols-outlined">zoom_in</span>拡大</span><div class="sws">${sws}</div><div class="cd">${CLOTH[k].d}</div>
-        ${t.real ? `<div class="ctools"><button data-v="${k}:pull" class="${v === 'pull' ? 'on' : ''}"><span class="material-symbols-outlined">arrow_range</span>引っぱる</button><button data-v="${k}:cut" class="${v === 'cut' ? 'on' : ''}"><span class="material-symbols-outlined">content_cut</span>切り口</button></div><p class="cnote">${v ? CLOTH_NOTE[v][k] : ''}</p>` : ''}
+      return `<div class="cloth"><b>${gl(CLOTH[k].n)}</b><span class="lupe"><span class="material-symbols-outlined" aria-hidden="true">zoom_in</span>拡大</span><div class="sws">${sws}</div><div class="cd">${CLOTH[k].d}</div>
+        ${t.real ? `<div class="ctools"><button data-v="${k}:pull" class="${v === 'pull' ? 'on' : ''}"><span class="material-symbols-outlined" aria-hidden="true">arrow_range</span>引っぱる</button><button data-v="${k}:cut" class="${v === 'cut' ? 'on' : ''}"><span class="material-symbols-outlined" aria-hidden="true">content_cut</span>切り口</button></div><p class="cnote">${v ? CLOTH_NOTE[v][k] : ''}</p>` : ''}
         ${solved === 3 ? `<div class="cex">${CLOTH[k].ex}</div>` : ''}</div>`; }).join('')}</div>
     ${t.real ? '<p class="sub" style="text-align:center;margin:-4px 0 8px">教室の 布で たしかめた ことを、ゲームでも「引っぱる」「切り口」で 見て くらべよう</p>' : ''}
     ${!t.real ? `${real}<div class="row"><button id="bBack">塔の 入口へ</button><button class="main" id="bReal">たしかめた（依頼へ）</button></div>`
-    : `<p class="guide"><span class="material-symbols-outlined">touch_app</span><span>依頼に 合う 布の つくりを えらんで、${esc(m.name)}を 進化させよう（${solved}/3）</span></p>
+    : `<p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>依頼に 合う 布の つくりを えらんで、${esc(m.name)}を 進化させよう（${solved}/3）</span></p>
       <div class="reqs">${C1_REQ.map((q, i) => { const pk = t.r[i], ok = pk === q.ans; return `<div class="req${ok ? ' ok' : ''}"><b>依頼${i + 1}</b>　${gl(q.t)}
         ${ok ? '' : `<div class="opts">${Object.keys(CLOTH).map((k) => `<button data-q="${i}" data-k="${k}"${pk === k ? ' class="pick"' : ''}>${CLOTH[k].n}</button>`).join('')}</div>`}
         ${pk ? `<div class="hint">${ok ? `<span class="chip ok">ねがいに合っている</span>　${esc(m.name)}が ${CLOTH[pk].n}に 進化した！` : `<span class="chip ng">まだ</span>　手がかり：${gl(q.hint)}`}</div>` : ''}</div>`; }).join('')}</div>
@@ -4121,17 +4132,17 @@ function towerF3() {
   const err = t.e ? `<div style="margin-top:6px">${lnHtml({ who: aiNm(), t: aiSnd() + t.e })}</div>` : '';
   let body, btns;
   if (t.m === 1) {
-    body = `<p class="guide"><span class="material-symbols-outlined">touch_app</span><span>タグを 読んで、多い ほうの 繊維を えらぼう</span></p>${tag}
+    body = `<p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>タグを 読んで、多い ほうの 繊維を えらぼう</span></p>${tag}
       <div class="opts" style="display:flex;gap:8px;justify-content:center;margin:8px 0"><button data-main="${P}">ポリエステルが 多い</button><button data-main="${C}">綿が 多い</button></div>${err}`;
     btns = '';
   } else if (t.m === 2) {
     // 先に 予想（本人「使用者に寄り添った表示」・検証 2026-10-25：△→○ が 見えてから 聞くと 予想に ならない）
-    body = `<p class="guide"><span class="material-symbols-outlined">touch_app</span><span>合体する 前に 予想しよう。ポリエステルに 綿を まぜると、ポリエステルの 苦手が 1つ おぎなわれる。どの 能力だと 思う？（2つの 列を くらべよう）</span></p>${tag}${band}${table(false)}
+    body = `<p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>合体する 前に 予想しよう。ポリエステルに 綿を まぜると、ポリエステルの 苦手が 1つ おぎなわれる。どの 能力だと 思う？（2つの 列を くらべよう）</span></p>${tag}${band}${table(false)}
       <div class="mix"><div class="opts" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0">${STAT.map((n, k) => `<button data-guess="${k}" class="${t.g === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
       <p class="sub" style="text-align:center">${t.g == null ? '予想を 1つ えらぶと、合体できる' : `予想：<b>${STAT[t.g]}</b>。「合体！」で たしかめよう`}</p>`;
     btns = `<button class="main" id="bFuse"${t.g == null ? ' disabled' : ''}>合体！</button>`;
   } else if (t.m === 3) {
-    body = `<p class="guide"><span class="material-symbols-outlined">touch_app</span><span>合体した！ 表の「合体」の 列で、△→○ のように 上がった 所を えらんで、予想（${t.g != null ? STAT[t.g] : '―'}）と くらべよう</span></p>${tag}${band}${table(true)}
+    body = `<p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>合体した！ 表の「合体」の 列で、△→○ のように 上がった 所を えらんで、予想（${t.g != null ? STAT[t.g] : '―'}）と くらべよう</span></p>${tag}${band}${table(true)}
       <div class="opts" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0">${STAT.map((n, k) => `<button data-up="${k}">${n}</button>`).join('')}</div>${err}`;
     btns = '';
   } else {
@@ -4329,7 +4340,7 @@ function openYTrip() {
     const st = ySteps(ev, ch), last = st[n - 1], waiting = last && last.ev && ch[last.ev] == null;
     openSheet(`<h2>③ 旅：雪の峠</h2><p class="sub">${gl('しずく時計：しずくが1つ落ちるたびに、1日の時間が 少し進む。仕立てた服で、ゆうびん屋さんの 1日が どうなるかを 先に たしかめる')}（${y.tries}回目）。とちゅうで、ゆうびん屋さんの 行動を 選ぶ</p>
       <div class="tripwrap"><div class="tclock">${dropClock(st, n, shown)}
-        <div class="tbtn">${waiting ? '<p class="sub">出来事：ゆうびん屋さんの 行動を えらぼう</p>' : n < st.length ? '<button class="main" id="bDrop"><span class="material-symbols-outlined">water_drop</span>しずくを落とす</button>' : '<button class="main" id="bLook">④ ふりかえりへ</button>'}</div></div>
+        <div class="tbtn">${waiting ? '<p class="sub">出来事：ゆうびん屋さんの 行動を えらぼう</p>' : n < st.length ? '<button class="main" id="bDrop"><span class="material-symbols-outlined" aria-hidden="true">water_drop</span>しずくを落とす</button>' : '<button class="main" id="bLook">④ ふりかえりへ</button>'}</div></div>
       <div class="tlog">${n ? '' : '<p class="sub">しずくを 落とすと、朝の 坂道から 始まる</p>'}
       ${st.slice(0, n).map((x) => (x.ev
         ? (ch[x.ev] == null ? `<div class="evq"><b>${x.name}</b><br>${gl(x.q)}<div class="asks">${x.opts.map((o, j) => `<button data-e="${x.ev}" data-j="${j}">${o}</button>`).join('')}</div></div>`
@@ -4475,7 +4486,7 @@ function openMKitsuke() {
   openSheet(`<h2>ゆかたの 着方：夕方の したく</h2><p class="sub">${gl('ヒナタは、祭りの 日の 夕方、自分で ゆかたを 着る。おばあちゃんの ゆかたで、前の 合わせ方を たしかめよう（教科書の 和服の ページを 見てよい）')}</p>
     ${say('ヒナタ', 'ゆかたって、前を 重ねて 着るんだよね。でも、右と 左、どっちを 上に するんだっけ……？')}
     <div class="kitsuke"><div class="ktorso">${m.awase ? pic(m.awase) : bare()}<p class="tcap">${m.awase ? '前から 見た ところ' : '合わせ方を えらぶと、ゆかたを 着る'}</p></div>
-      <div class="kopts"><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>どちらの 合わせ方で 着る？ えらぶと、絵が かわる</span></p>
+      <div class="kopts"><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>どちらの 合わせ方で 着る？ えらぶと、絵が かわる</span></p>
         <p class="sub" style="margin:0 0 2px">右・左は、着る人（ヒナタ）から 見た 右・左</p>
         ${opts.map(([d, t]) => `<button class="kopt${m.awase === d ? ' on' : ''}" data-aw="${d}" aria-pressed="${m.awase === d}">${t}</button>`).join('')}
         ${m.ng ? `<div class="khint">${say('ヒナタ', 'あれ？ おばあちゃんが「その 合わせ方は、いつもと 反対だよ」って……。')}${lnHtml({ who: aiNm(), t: aiSnd() + '衿の 重なり方を 見よう。ギルドの ツムギさんは、いつも 着物を きちんと 着ているよ。前から 見ると、衿は どんな 形かな？ 教科書の 和服の ページとも くらべてみよう。' })}</div>` : ''}
@@ -4529,7 +4540,7 @@ function openMTrip() {
     const st = mSteps(ev, ch), last = st[n - 1], waiting = last && last.ev && ch[last.ev] == null;
     openSheet(`<h2>③ 旅：夏祭りの村</h2><p class="sub">${gl('しずく時計：しずくが1つ落ちるたびに、1日の時間が 少し進む。仕立てた服で、ヒナタの 祭りの 日が どうなるかを 先に たしかめる')}（${m.tries}回目）。とちゅうで、ヒナタの 行動を 選ぶ</p>
       <div class="tripwrap"><div class="tclock">${dropClock(st, n, shown)}
-        <div class="tbtn">${waiting ? '<p class="sub">出来事：ヒナタの 行動を えらぼう</p>' : n < st.length ? '<button class="main" id="bDrop"><span class="material-symbols-outlined">water_drop</span>しずくを落とす</button>' : '<button class="main" id="bLook">④ ふりかえりへ</button>'}</div></div>
+        <div class="tbtn">${waiting ? '<p class="sub">出来事：ヒナタの 行動を えらぼう</p>' : n < st.length ? '<button class="main" id="bDrop"><span class="material-symbols-outlined" aria-hidden="true">water_drop</span>しずくを落とす</button>' : '<button class="main" id="bLook">④ ふりかえりへ</button>'}</div></div>
       <div class="tlog">${n ? '' : '<p class="sub">しずくを 落とすと、祭りの 日の 夕方から 始まる</p>'}
       ${st.slice(0, n).map((x) => (x.narr ? `<div class="scene"><b>${x.name}</b>${lnHtml({ scr: x.scr })}<span class="voice">ヒナタ「${gl(x.say)}」</span></div>`
         : x.ev ? (ch[x.ev] == null ? `<div class="evq"><b>${x.name}</b><br>${gl(x.q)}<div class="asks">${x.opts.map((o, j) => `<button data-e="${x.ev}" data-j="${j}">${o}</button>`).join('')}</div></div>`
@@ -4682,19 +4693,19 @@ function washRows(it) {
   ];
 }
 // 洗う 1まい：品質表示と ヨゴレンを 見て 6つ えらび、「洗う」→ すっきり／しょんぼり（手当て＝えらび直し）。記号の 一覧は その場で ひらける
-function washCard(it, title, onClean, onBack) {
+function washCard(it, title, onClean, onBack) {   // 下に「あと ○つ：⑥ アイロン」を 出す（2026-10-26 クロスレビュー：押せない 理由が 出なかった）
   const rows = washRows(it), pick = {}, st = { tried: false, bad: [], list: false };
   const who = fill(it.who), y = YOGO[it.stain];
   const draw = () => {
     const all = rows.every((r) => pick[r.k]);
-    openSheet(`<h2>${title}</h2><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>タグ（品質表示）と ヨゴレンを 見て、6つ えらんで「洗う」。記号は「記号の 一覧」、繊維は 手帳（表1）で たしかめよう</span></p>
-      <div class="wtop"><div class="wtag">${ptagHtml(it.fibs, careOf(it))}<button class="clbtn" id="bCList"><span class="material-symbols-outlined">menu_book</span>${st.list ? '記号の 一覧を とじる' : '記号の 一覧（洗い場の かべ）'}</button></div>
-        <div class="wstain"><span class="material-symbols-outlined">${y.ic}</span><span><b>${who}</b><br>${it.at ? `${it.at}に ` : ''}<b>${y.n}</b>（${y.k}）が ついている</span></div></div>
+    openSheet(`<h2>${title}</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>タグ（品質表示）と ヨゴレンを 見て、6つ えらんで「洗う」。記号は「記号の 一覧」、繊維は 手帳（表1）で たしかめよう</span></p>
+      <div class="wtop"><div class="wtag">${ptagHtml(it.fibs, careOf(it))}<button class="clbtn" id="bCList"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span>${st.list ? '記号の 一覧を とじる' : '記号の 一覧（洗い場の かべ）'}</button></div>
+        <div class="wstain"><span class="material-symbols-outlined" aria-hidden="true">${y.ic}</span><span><b>${who}</b><br>${it.at ? `${it.at}に ` : ''}<b>${y.n}</b>（${y.k}）が ついている</span></div></div>
       ${st.list ? `<div class="clwrap">${careList()}</div>` : ''}
       <div class="wrows">${rows.map((r, i) => { const ng = st.tried && st.bad.includes(r.k), ok = st.tried && !ng;
         return `<div class="wrow${ng ? ' ng' : ok ? ' ok' : ''}"><div class="wl">${'①②③④⑤⑥'[i]} ${r.l}<small>${r.s}</small></div><div class="wo">${r.opts.map((o) => `<button data-k="${r.k}" data-o="${o}" class="${pick[r.k] === o ? 'pick' : ''}">${esc(o)}</button>`).join('')}</div>${ng ? `<div class="wh">手がかり：${gl(r.hint)}</div>` : ''}</div>`; }).join('')}</div>
-      ${st.tried && st.bad.length ? `<div class="wres ng"><span class="material-symbols-outlined">sentiment_dissatisfied</span><span>${st.msg}<br><small>赤い 行を えらび直して、もう一度「洗う」（手当て）</small></span></div>` : ''}
-      <div class="row">${onBack ? '<button id="bBack">もどる</button>' : ''}<button class="main" id="bWash"${all ? '' : ' disabled'}><span class="material-symbols-outlined" style="font-size:18px;vertical-align:-3px">local_laundry_service</span> 洗う</button></div>`, true);
+      ${st.tried && st.bad.length ? `<div class="wres ng"><span class="material-symbols-outlined" aria-hidden="true">sentiment_dissatisfied</span><span>${st.msg}<br><small>赤い 行を えらび直して、もう一度「洗う」（手当て）</small></span></div>` : ''}
+      <div class="sfoot"><p class="need${all ? ' ok' : ''}">${all ? '<span class="material-symbols-outlined" aria-hidden="true">check_circle</span><span>6つ えらべた！「洗う」を 押そう</span>' : `<span class="material-symbols-outlined" aria-hidden="true">pending</span><span>あと ${rows.filter((r) => !pick[r.k]).length}つ：${rows.map((r, i) => (pick[r.k] ? '' : `${'①②③④⑤⑥'[i]} ${r.l}`)).filter(Boolean).join('／')}</span>`}</p><div class="row">${onBack ? '<button id="bBack">もどる</button>' : ''}<button class="main" id="bWash"${all ? '' : ' disabled'}><span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px;vertical-align:-3px">local_laundry_service</span> 洗う</button></div></div>`, true);
     $('#sheet').querySelectorAll('[data-k]').forEach((b) => (b.onclick = () => { pick[b.dataset.k] = b.dataset.o; st.bad = st.bad.filter((k) => k !== b.dataset.k); draw(); }));
     if (onBack) $('#bBack').onclick = onBack;
     $('#bCList').onclick = () => { st.list = !st.list; draw(); if (st.list) $('#sheet .clwrap').scrollIntoView({ block: 'nearest' }); };
@@ -4750,8 +4761,8 @@ function c3Arai() {
     ], () => c3Arai(), '服を 洗う', true);
   }
   const left = WASH_C3.filter((x) => !S.story.w.includes(x.id));
-  openSheet(`<h2>ギルドの洗い場</h2><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>${left.length ? `洗う 服を えらぼう（${S.story.w.length}/${WASH_C3.length} すっきり）。どれからでも よい` : `${WASH_C3.length}まい とも すっきり！「つぎへ」を おそう`}</span></p>
-    <div class="wlist">${WASH_C3.map((x) => `<button data-w="${x.id}" class="${S.story.w.includes(x.id) ? 'done' : ''}"${S.story.w.includes(x.id) ? ' disabled' : ''}><span><span class="material-symbols-outlined" style="font-size:18px;vertical-align:-4px">${S.story.w.includes(x.id) ? 'check_circle' : x.ic}</span> ${fill(x.who)}</span><small>${x.fibs.map(([f, n]) => `${f} ${n}%`).join('・')}　${S.story.w.includes(x.id) ? 'すっきり！' : YOGO[x.stain].n}</small></button>`).join('')}</div>
+  openSheet(`<h2>ギルドの洗い場</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>${left.length ? `洗う 服を えらぼう（${S.story.w.length}/${WASH_C3.length} すっきり）。どれからでも よい` : `${WASH_C3.length}まい とも すっきり！「つぎへ」を おそう`}</span></p>
+    <div class="wlist">${WASH_C3.map((x) => `<button data-w="${x.id}" class="${S.story.w.includes(x.id) ? 'done' : ''}"${S.story.w.includes(x.id) ? ' disabled' : ''}><span><span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px;vertical-align:-4px">${S.story.w.includes(x.id) ? 'check_circle' : x.ic}</span> ${fill(x.who)}</span><small>${x.fibs.map(([f, n]) => `${f} ${n}%`).join('・')}　${S.story.w.includes(x.id) ? 'すっきり！' : YOGO[x.stain].n}</small></button>`).join('')}</div>
     <div class="row"><button id="bClose">あとで</button>${left.length ? '' : '<button class="main" id="bNext">つぎへ</button>'}</div>`, true);
   $('#sheet').querySelectorAll('[data-w]').forEach((b) => (b.onclick = () => {
     const it = WASH_C3.find((x) => x.id === b.dataset.w);
@@ -4785,11 +4796,11 @@ const SUIRI_SAY = {
 function c3Suiri(sel = {}) {
   const clues = S.nazo.filter((x) => x.f && SUIRI_OK[x.f]);
   const cl = clues[sel.c], fb = sel.fb;
-  openSheet(`<h2>推理の 時間</h2><p class="guide"><span class="material-symbols-outlined">search</span><span>手帳の 記録から「おかしい」と 思う ものを 1つ、表1の どの 欄で そう 思ったかを 1つ えらぼう。<b>当てるのが 目的では ない。</b>理由（表1の 欄）を 言えたら、物語が 先へ 進む</span></p>
-    <div class="class-talk"><span class="material-symbols-outlined">groups</span><span>クラスで：ここで 手を とめて、だれが あやしいか・どこが おかしいかを 出し合おう。<b>根拠は 表1の 欄で</b> 言う</span></div>
+  openSheet(`<h2>推理の 時間</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">search</span><span>手帳の 記録から「おかしい」と 思う ものを 1つ、表1の どの 欄で そう 思ったかを 1つ えらぼう。<b>当てるのが 目的では ない。</b>理由（表1の 欄）を 言えたら、物語が 先へ 進む</span></p>
+    <div class="class-talk"><span class="material-symbols-outlined" aria-hidden="true">groups</span><span>クラスで：ここで 手を とめて、だれが あやしいか・どこが おかしいかを 出し合おう。<b>根拠は 表1の 欄で</b> 言う</span></div>
     <div class="suiri" style="margin-top:10px"><div class="col clues"><b>① 手帳の 記録（${clues.length}）</b>${clues.map((x, i) => `<label><input type="radio" name="sc" value="${i}"${sel.c === i ? ' checked' : ''}> <span>${gl(x.t)}</span></label>`).join('')}</div>
       <div class="col"><b>② 表1の どの 欄で？</b>${T1_COLS.map((c) => `<label><input type="radio" name="sk" value="${c}"${sel.k === c ? ' checked' : ''}> <span>${gl(c)}</span></label>`).join('')}
-        ${fb ? `<div class="wres ${fb.ok ? 'ok' : 'ng'}" style="margin-top:4px"><span class="material-symbols-outlined">${fb.ok ? 'lightbulb' : 'help'}</span><span>${fb.t}</span></div>` : ''}
+        ${fb ? `<div class="wres ${fb.ok ? 'ok' : 'ng'}" style="margin-top:4px"><span class="material-symbols-outlined" aria-hidden="true">${fb.ok ? 'lightbulb' : 'help'}</span><span>${fb.t}</span></div>` : ''}
         <div class="row" style="margin-top:4px"><button id="bNote">手帳を 見る</button>${fb && fb.go ? '<button class="main" id="bGo">マトイさんに 聞きに 行く</button>' : `<button class="main" id="bSay"${sel.c != null && sel.k ? '' : ' disabled'}>この 理由で 言う</button>`}</div></div></div>`, true);
   $('#sheet').querySelectorAll('input[name=sc]').forEach((r) => (r.onchange = () => c3Suiri({ c: +r.value, k: sel.k })));
   $('#sheet').querySelectorAll('input[name=sk]').forEach((r) => (r.onchange = () => c3Suiri({ c: sel.c, k: r.value })));
@@ -4839,7 +4850,7 @@ function c3Yabure() {
     { who: '町の子', t: '見習いさん！ シャツの ボタンが とれちゃった！ すその 端も ほつれて……' },
     { who: 'ボタンポロリ', t: 'ポロリ〜ン！ ボタン、とっちゃった〜' },
     { who: 'ホツレン', t: 'ホツレ〜ン！ 布の 端、ほどいちゃった〜' },
-    { html: '<div class="wstain" style="width:100%"><span class="material-symbols-outlined">content_cut</span><span><b>ヤブレ族</b>は、洗っても 片づかない。<b>針と糸の わざ</b>で 直す</span></div>' },
+    { html: '<div class="wstain" style="width:100%"><span class="material-symbols-outlined" aria-hidden="true">content_cut</span><span><b>ヤブレ族</b>は、洗っても 片づかない。<b>針と糸の わざ</b>で 直す</span></div>' },
     ai({ meja: 'シュルルッ……洗っても 直らないね。はかって 縫う わざが いる！', pinko: 'チクッ！ ここは 針と 糸の 出番！ でも……', iro: 'シュー……。洗っても 直らない。縫って 直す わざが いるね。' }),
     { who: 'ツムギ', t: 'それは、針と糸の わざで 直すんだよ。ボタンつけ、かがり縫い……教室で 身につけて おいで。' },
     { who: 'me', t: 'わかった。わざを 身につけたら、きっと 直すね！' },
@@ -4872,7 +4883,7 @@ function araiFree() {
     openSheet(`<h2>ギルドの洗い場</h2>${say(aiNm(), aiSnd() + 'ここは ギルドの 洗い場。洗い方は、もう少し あとで 教わるみたい。')}<div class="row"><button class="main" id="bClose">とじる</button></div>`);
     $('#bClose').onclick = closeSheet; $('#bClose').focus(); return;
   }
-  openSheet(`<h2>ギルドの洗い場</h2><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>${dirty.length ? '旅で よごれた センモンを えらんで 洗おう' : 'いまは、よごれた センモンは いない。旅の あとに また 来よう'}</span></p>
+  openSheet(`<h2>ギルドの洗い場</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>${dirty.length ? '旅で よごれた センモンを えらんで 洗おう' : 'いまは、よごれた センモンは いない。旅の あとに また 来よう'}</span></p>
     ${dirty.length ? `<div class="wlist">${dirty.map((x) => `<button data-n="${esc(x.name)}"><span><span class="sw" style="background:${hueCss(x.hue)}"></span>${esc(x.name)}</span><small>${x.fib}　${YOGO[S.dirt[x.name]].n}（${YOGO[S.dirt[x.name]].k}）</small></button>`).join('')}</div>` : ''}
     <p class="sub">洗い方の メモは 手帳の「表1の 見かた」、記号は 手帳の「取扱い表示」に ある</p><div class="row"><button id="bNote">手帳を 見る</button><button class="main" id="bClose">とじる</button></div>`);
   $('#sheet').querySelectorAll('[data-n]').forEach((b) => (b.onclick = () => {
@@ -4928,8 +4939,8 @@ function c5Tsumugi() {
 }
 function c5Sew() {
   const fixed = S.story.sew || (S.story.sew = []), left = SEW.filter((x) => !fixed.includes(x.id));
-  openSheet(`<h2>針と糸の わざ：服を 直す</h2><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>${left.length ? `直す 服を えらぼう（${fixed.length}/${SEW.length} 直った）。どれからでも よい` : `${SEW.length}つ とも 直った！「つぎへ」を おそう`}</span></p>
-    <div class="wlist">${SEW.map((x) => { const d = fixed.includes(x.id); return `<button data-s="${x.id}" class="${d ? 'done' : ''}"${d ? ' disabled' : ''}><span><span class="material-symbols-outlined" style="font-size:18px;vertical-align:-4px">${d ? 'check_circle' : x.ic}</span> ${fill(x.who)}</span><small>${d ? '直った' : x.what}</small></button>`; }).join('')}</div>
+  openSheet(`<h2>針と糸の わざ：服を 直す</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>${left.length ? `直す 服を えらぼう（${fixed.length}/${SEW.length} 直った）。どれからでも よい` : `${SEW.length}つ とも 直った！「つぎへ」を おそう`}</span></p>
+    <div class="wlist">${SEW.map((x) => { const d = fixed.includes(x.id); return `<button data-s="${x.id}" class="${d ? 'done' : ''}"${d ? ' disabled' : ''}><span><span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px;vertical-align:-4px">${d ? 'check_circle' : x.ic}</span> ${fill(x.who)}</span><small>${d ? '直った' : x.what}</small></button>`; }).join('')}</div>
     <p class="sub">縫い方の 説明は、点線の ことばを 押すと 出る：${STITCH.map((x) => gl(x.n)).join('・')}</p>
     <div class="row"><button id="bClose">あとで</button>${left.length ? '' : '<button class="main" id="bNext">つぎへ</button>'}</div>`, true);
   $('#sheet').querySelectorAll('[data-s]').forEach((b) => (b.onclick = () => sewCard(SEW.find((x) => x.id === b.dataset.s))));
@@ -4939,12 +4950,12 @@ function c5Sew() {
 function sewCard(it) {
   let pick = null, res = null;
   const draw = () => {
-    openSheet(`<h2>直す：${fill(it.who)}</h2><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>こまった ことと ねがいを 読んで、縫い方を 1つ えらび「この 縫い方で 直す」</span></p>
-      <div class="wtop"><div class="wstain"><span class="material-symbols-outlined">${it.ic}</span><span><b>${fill(it.who)}</b><br>${it.what}<br><small>ヤブレ族：${it.yb}</small></span></div>
+    openSheet(`<h2>直す：${fill(it.who)}</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>こまった ことと ねがいを 読んで、縫い方を 1つ えらび「この 縫い方で 直す」</span></p>
+      <div class="wtop"><div class="wstain"><span class="material-symbols-outlined" aria-hidden="true">${it.ic}</span><span><b>${fill(it.who)}</b><br>${it.what}<br><small>ヤブレ族：${it.yb}</small></span></div>
         <div class="wtag"><small>ねがい</small><br><b style="font-size:15px">${it.need}</b></div></div>
       <div class="stitches">${STITCH.map((x) => `<button data-n="${x.n}" class="${pick === x.n ? 'pick' : ''}"><b>${x.n}</b><small>${x.d}</small></button>`).join('')}</div>
-      ${res === 'ng' ? `<div class="wres ng"><span class="material-symbols-outlined">sentiment_dissatisfied</span><span>まだ ねがいに 合っていない。<br><small>手がかり：${gl(it.hint)}</small></span></div>` : ''}
-      <div class="row"><button id="bBack">もどる</button><button class="main" id="bSew"${pick ? '' : ' disabled'}><span class="material-symbols-outlined" style="font-size:18px;vertical-align:-3px">content_cut</span> この 縫い方で 直す</button></div>`, true);
+      ${res === 'ng' ? `<div class="wres ng"><span class="material-symbols-outlined" aria-hidden="true">sentiment_dissatisfied</span><span>まだ ねがいに 合っていない。<br><small>手がかり：${gl(it.hint)}</small></span></div>` : ''}
+      <div class="row"><button id="bBack">もどる</button><button class="main" id="bSew"${pick ? '' : ' disabled'}><span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px;vertical-align:-3px">content_cut</span> この 縫い方で 直す</button></div>`, true);
     $('#sheet').querySelectorAll('[data-n]').forEach((b) => (b.onclick = () => { pick = b.dataset.n; res = null; draw(); }));
     $('#bBack').onclick = () => c5Sew();
     $('#bSew').onclick = () => {
@@ -5012,7 +5023,7 @@ function c6Tsumugi() {
 function c6Kit() {
   const K = S.story.kit || (S.story.kit = { hand: [] });
   const okFelt = K.felt === KIT[0].ans, ready = okFelt && K.fleece && K.cover && (K.hand || []).length;
-  openSheet(`<h2>終章：キットを 読み解く</h2><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>カタログの ことばを、これまでの 章の 知識で 読もう。（予想）は 答えが 1つでは ない。教室で たしかめる</span></p>
+  openSheet(`<h2>終章：キットを 読み解く</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>カタログの ことばを、これまでの 章の 知識で 読もう。（予想）は 答えが 1つでは ない。教室で たしかめる</span></p>
     <div class="wrows">${KIT.map((x) => {
       const v = K[x.id], done = x.multi ? (v || []).length : v, ng = x.ans && v && v !== x.ans, ok = done && !ng;
       const btns = x.info ? `<span style="font-size:13px">${x.info}</span>`
@@ -5035,12 +5046,12 @@ const SCENES6 = ['部活の 大会の 日', '遠足の 日', '体育祭の 日']
 function c6Bottle() {
   const b = S.reflect.bottle || (S.reflect.bottle = { scene: null, v: null, why: '' });
   const ok = () => b.scene && b.v && b.why.trim();
-  openSheet(`<h2>終章：買う ペットボトルは へる？</h2><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>① 場面を えらぶ → ② へる？ かわらない？ ふえる？ → ③ 理由を 1行</span></p>
+  openSheet(`<h2>終章：買う ペットボトルは へる？</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>① 場面を えらぶ → ② へる？ かわらない？ ふえる？ → ③ 理由を 1行</span></p>
     <div class="recap"><b>化学の都の センモンの 話</b><br>回収された ペットボトルは、ポリエステルの 服などに 生まれ変わる（${gl('リサイクル')}）。</div>
     <p class="lab2">① みんなに 共通の 場面</p><div class="choice">${SCENES6.map((x) => `<button data-sc="${x}" class="${b.scene === x ? 'pick' : ''}">${x}</button>`).join('')}</div>
     <p class="lab2">② その日、水筒入れと ${gl('マイボトル')}を 持ち歩くと、買う ペットボトルは？</p><div class="choice">${['へる', 'かわらない', 'ふえる'].map((x) => `<button data-v="${x}" class="${b.v === x ? 'pick' : ''}">${x}</button>`).join('')}</div>
     <label class="reflect"><p class="lab2">③ そう 考えた 理由（1行）</p><textarea id="bWhy" maxlength="80" placeholder="例：大会の日は 水を たくさん 飲むから、泉や 水道で くめれば……">${esc(b.why)}</textarea></label>
-    <div class="class-talk"><span class="material-symbols-outlined">groups</span><span>クラスで 意見を 出し合おう。<b>意見が 分かれて よい</b>。答えは 1つでは ない</span></div>
+    <div class="class-talk"><span class="material-symbols-outlined" aria-hidden="true">groups</span><span>クラスで 意見を 出し合おう。<b>意見が 分かれて よい</b>。答えは 1つでは ない</span></div>
     <div class="row"><button id="bBack">もどる</button><button class="main" id="bGo"${ok() ? '' : ' disabled'}>つぎへ（装備カード）</button></div>`, true);
   $('#sheet').querySelectorAll('[data-sc]').forEach((x) => (x.onclick = () => { b.scene = x.dataset.sc; saveGame(); c6Bottle(); }));
   $('#sheet').querySelectorAll('[data-v]').forEach((x) => (x.onclick = () => { b.v = x.dataset.v; saveGame(); c6Bottle(); }));
@@ -5088,7 +5099,7 @@ function holderCanvas(cd) {
 function c6Card() {
   const cd = S.story.card || (S.story.card = newCard()), mine = S.mine || ALL_SENMON[0];
   const ok = () => cd.body != null && cd.felt.length === 2 && (cd.face !== 'text' || (cd.text || '').trim());
-  openSheet(`<h2>終章：装備カード</h2><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>① 本体の 色 → ② 顔 → ③ フェルトの 2色 を えらんで「仕上げる」。水筒入れの 絵が すぐ かわる</span></p>
+  openSheet(`<h2>終章：装備カード</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>① 本体の 色 → ② 顔 → ③ フェルトの 2色 を えらんで「仕上げる」。水筒入れの 絵が すぐ かわる</span></p>
     <div class="birth"><div>
       <p class="lab">① 本体の 色（キットの 7色から。注文する 色）</p><div class="hues" style="grid-template-columns:repeat(7,36px)">${KIT_BODY.map((h, i) => `<button data-b="${i}" class="${cd.body === i ? 'pick' : ''}" style="background:${hueCss(h, 62)}" aria-label="${KIT_BODY_N[i]}" title="${KIT_BODY_N[i]}"></button>`).join('')}</div>
       <p class="sub" style="margin:4px 0 0">${cd.body != null ? `えらんだ 色：<b>${KIT_BODY_N[cd.body]}</b>。` : ''}色の 名前は、先生の カタログで たしかめよう</p>
@@ -5150,10 +5161,10 @@ function c6Pass() {
 // 1分：だれだと 思っていた？（当てるのが 目的では ない）
 function c6Who() {
   const pick = S.reflect.who, clues = S.nazo.filter((x) => [8, 9, 10].includes(x.f) && x.ch < 6);   // 答えの 行（終章で 書いた もの）は 出さない
-  openSheet(`<h2>終章：だれだと 思っていた？</h2><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>1分。鍵を わたしたのは だれだと 思っていたか、1つ えらぼう</span></p>
+  openSheet(`<h2>終章：だれだと 思っていた？</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>1分。鍵を わたしたのは だれだと 思っていたか、1つ えらぼう</span></p>
     <div class="choice">${['ツムギさん', 'マトイさん', 'ボロン', 'ほかの 人', 'わからなかった'].map((x) => `<button data-w="${x}" class="${pick === x ? 'pick' : ''}">${x}</button>`).join('')}</div>
     ${pick ? `<div class="recap" style="margin-top:10px"><b>手帳を ふり返ると</b>${clues.map((x) => `<br>・${gl(x.t)}`).join('')}</div>` : ''}
-    <div class="class-talk"><span class="material-symbols-outlined">groups</span><span>当てるのが 目的では ない。<b>手帳の どの 記録で そう 思ったか</b>を、クラスで 1分 話そう</span></div>
+    <div class="class-talk"><span class="material-symbols-outlined" aria-hidden="true">groups</span><span>当てるのが 目的では ない。<b>手帳の どの 記録で そう 思ったか</b>を、クラスで 1分 話そう</span></div>
     <div class="row"><button id="bNote">手帳を 見る</button><button class="main" id="bGo"${pick ? '' : ' disabled'}>終章を おえる</button></div>`, true);
   $('#sheet').querySelectorAll('[data-w]').forEach((b) => (b.onclick = () => { S.reflect.who = b.dataset.w; saveGame(); c6Who(); }));
   $('#bNote').onclick = () => openNote();
@@ -5225,10 +5236,10 @@ function c7Revive() {
   const R = S.story.rev || (S.story.rev = {});
   const res = (it) => { const m = R[it.id]; return !m ? null : it.best.includes(m) ? 'best' : it.ok.includes(m) ? 'ok' : 'ng'; };
   const all = REVIVE.every((it) => ['best', 'ok'].includes(res(it)));
-  openSheet(`<h2>エピローグ：服を よみがえらせる</h2><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>1まいずつ、服の ようすを 見て よみがえらせ方を えらぼう。よい 方法は 1つとは かぎらない</span></p>
+  openSheet(`<h2>エピローグ：服を よみがえらせる</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>1まいずつ、服の ようすを 見て よみがえらせ方を えらぼう。よい 方法は 1つとは かぎらない</span></p>
     <div class="recap"><b>${gl('再利用')}</b>：服や 布として、もう一度 使う（ゆずる＝${gl('リユース')}・直して 着る＝${gl('リペア')}・作りかえる＝${gl('リメイク')}）<br><b>資源に もどす（${gl('リサイクル')}）</b>：工場で 素材や パーツに 分けて、資源に する<br><small>教科書 pp.200-201「衣服の 循環」</small><br><small>${METHODS.map(([n, d]) => `${n}＝${d}`).join('／')}</small></div>
     <div class="wrows">${REVIVE.map((it) => { const r = res(it);
-      return `<div class="wrow${r === 'ng' ? ' ng' : r ? ' ok' : ''}"><div class="wl"><span class="material-symbols-outlined" style="font-size:18px;vertical-align:-4px">${it.ic}</span> ${it.who}<small>${it.st}</small></div>
+      return `<div class="wrow${r === 'ng' ? ' ng' : r ? ' ok' : ''}"><div class="wl"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px;vertical-align:-4px">${it.ic}</span> ${it.who}<small>${it.st}</small></div>
         <div class="wo">${METHODS.map(([n]) => `<button data-r="${it.id}" data-m="${n}" class="${R[it.id] === n ? 'pick' : ''}">${n}</button>`).join('')}</div>
         ${r ? `<div class="wh" style="color:${r === 'ng' ? 'var(--akane)' : '#3f6b22'}">${r === 'best' ? it.yes : r === 'ok' ? `それも よい。${it.alt}` : `まだ。手がかり：${it.hint}`}</div>` : ''}</div>`; }).join('')}</div>
     <div class="row"><button id="bClose">あとで</button><button class="main" id="bGo"${all ? '' : ' disabled'}>つぎへ（自分の 端切れ）</button></div>`, true);
@@ -5243,7 +5254,7 @@ function c7Revive() {
 function c7Hagire() {
   const h = S.reflect.hagire || (S.reflect.hagire = { pick: [], own: '' });
   const ok = () => h.pick.length || h.own.trim();
-  openSheet(`<h2>エピローグ：自分の 端切れ</h2><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>水筒入れを 作って 余った フェルトや 布、どう 使う？（いくつでも・自分の アイデアも）</span></p>
+  openSheet(`<h2>エピローグ：自分の 端切れ</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>水筒入れを 作って 余った フェルトや 布、どう 使う？（いくつでも・自分の アイデアも）</span></p>
     ${say(aiNm(), aiSnd() + '布を むだなく 使えたら、倉庫の 服たちも よろこぶね！')}
     <div class="choice" style="margin-top:8px">${HAGIRE.map((x) => `<button data-h="${x}" class="${h.pick.includes(x) ? 'pick' : ''}">${x}</button>`).join('')}</div>
     <p class="lab2">自分の アイデア（なくても よい）</p><input class="line" id="hOwn" maxlength="30" autocomplete="off" placeholder="例：センモンの 顔の ワッペン" value="${esc(h.own)}">
@@ -5273,11 +5284,11 @@ function c7Sorry() {
 function c7Leader() {
   const L = S.reflect.leader || (S.reflect.leader = { k: null, why: '' });
   const ok = () => L.k && L.why.trim();
-  openSheet(`<h2>エピローグ：新しい ギルド長を 選ぶ</h2><p class="guide"><span class="material-symbols-outlined">touch_app</span><span>① 1人 えらぶ → ② 理由を 1文。それぞれが 大事に している ことを 読んで 考えよう</span></p>
-    <div class="aibos lead">${LEADERS.map((x) => `<div class="aibo${L.k === x.k ? ' pick' : ''}"><div class="ic" style="background:${x.bg}"><span class="material-symbols-outlined">${x.ic}</span></div><b>${fill(x.n)}</b><span><small>大事に して いる こと</small><br>${x.v}</span><button data-l="${x.k}" class="${L.k === x.k ? 'main' : ''}">${L.k === x.k ? 'えらんだ' : 'えらぶ'}</button></div>`).join('')}</div>
+  openSheet(`<h2>エピローグ：新しい ギルド長を 選ぶ</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>① 1人 えらぶ → ② 理由を 1文。それぞれが 大事に している ことを 読んで 考えよう</span></p>
+    <div class="aibos lead">${LEADERS.map((x) => `<div class="aibo${L.k === x.k ? ' pick' : ''}"><div class="ic" style="background:${x.bg}"><span class="material-symbols-outlined" aria-hidden="true">${x.ic}</span></div><b>${fill(x.n)}</b><span><small>大事に して いる こと</small><br>${x.v}</span><button data-l="${x.k}" class="${L.k === x.k ? 'main' : ''}">${L.k === x.k ? 'えらんだ' : 'えらぶ'}</button></div>`).join('')}</div>
     <label class="reflect"><p class="lab2">② 理由（1文）</p><textarea id="lWhy" maxlength="100" placeholder="例：メジャ丸は、いつも 表1で 根拠を はかって 選んでいたから">${esc(L.why)}</textarea></label>
     <p class="sub">書き方の 例：「○○は、△△を 大事に していて、□□の とき（洗い場・依頼・塔 など）に それが 見えたから」</p>
-    <div class="class-talk"><span class="material-symbols-outlined">groups</span><span>クラスで、えらんだ 人と 理由を 聞き合おう。<b>えらぶ 人は ちがって よい</b></span></div>
+    <div class="class-talk"><span class="material-symbols-outlined" aria-hidden="true">groups</span><span>クラスで、えらんだ 人と 理由を 聞き合おう。<b>えらぶ 人は ちがって よい</b></span></div>
     <div class="row"><button id="bClose">あとで</button><button class="main" id="bGo"${ok() ? '' : ' disabled'}>この 人に ギルド長の ボタンを</button></div>`, true);
   $('#sheet').querySelectorAll('[data-l]').forEach((b) => (b.onclick = () => { L.k = b.dataset.l; saveGame(); const y = $('#sheet').scrollTop; c7Leader(); $('#sheet').scrollTop = y; const t = $('#lWhy'); if (t && !L.why) t.focus({ preventScroll: true }); }));
   const t = $('#lWhy'); t.oninput = () => { L.why = t.value; $('#bGo').disabled = !ok(); };
@@ -5323,12 +5334,12 @@ function openEnding() {
   const st = (b) => `${'★'.repeat(b || 0)}${'☆'.repeat(3 - (b || 0))}`, L = LEADERS.find((x) => x.k === S.story.leader);
   openSheet(`<h2>旅の ふりかえり</h2><div class="endcard"><p class="big">一人前の 仕立て屋　${nm()}</p>${marksHtml(true)}</div>
     <div class="ending">
-      <div><span class="material-symbols-outlined">menu_book</span>図鑑 ${S.met.size}/${dexList().length}</div>
-      <div><span class="material-symbols-outlined">assignment</span><span>れんしゅう ${st(S.p.best)}<br>お祝いの式 ${st(S.q.best)}<br>雪の峠 ${st(S.y.best)}<br>夏祭りの村 ${st(S.m.best)}</span></div>
-      <div><span class="material-symbols-outlined">edit_note</span>なぞの手帳 ${S.nazo.length}行</div>
-      <div><span class="material-symbols-outlined">receipt_long</span>合体の レシピ ${T1().rec.length}こ</div>
-      <div><span class="material-symbols-outlined">local_laundry_service</span>洗った 服 ${(S.story.w || []).length}まい・直した 服 ${(S.story.sew || []).length}まい</div>
-      <div><span class="material-symbols-outlined">workspace_premium</span>新しい ギルド長：${L ? fill(L.n) : '―'}</div>
+      <div><span class="material-symbols-outlined" aria-hidden="true">menu_book</span>図鑑 ${S.met.size}/${dexList().length}</div>
+      <div><span class="material-symbols-outlined" aria-hidden="true">assignment</span><span>れんしゅう ${st(S.p.best)}<br>お祝いの式 ${st(S.q.best)}<br>雪の峠 ${st(S.y.best)}<br>夏祭りの村 ${st(S.m.best)}</span></div>
+      <div><span class="material-symbols-outlined" aria-hidden="true">edit_note</span>なぞの手帳 ${S.nazo.length}行</div>
+      <div><span class="material-symbols-outlined" aria-hidden="true">receipt_long</span>合体の レシピ ${T1().rec.length}こ</div>
+      <div><span class="material-symbols-outlined" aria-hidden="true">local_laundry_service</span>洗った 服 ${(S.story.w || []).length}まい・直した 服 ${(S.story.sew || []).length}まい</div>
+      <div><span class="material-symbols-outlined" aria-hidden="true">workspace_premium</span>新しい ギルド長：${L ? fill(L.n) : '―'}</div>
     </div>
     <div class="memo"><b>序章で 書いた ことば</b>（服を 選ぶとき・洗うとき、何を 見る？）<br>${S.reflect.jo ? esc(S.reflect.jo) : '（序章では 書いていない）'}</div>
     <label class="reflect"><p class="sub" style="margin:6px 0 4px">いまなら、どう 書く？（1行。序章の ことばと くらべてみよう）</p><textarea id="eRef" maxlength="80">${esc(S.reflect.end || '')}</textarea></label>
@@ -5448,7 +5459,15 @@ function openTsumugi() {
   $('#bNote').onclick = () => openNote(); $('#bClose').onclick = closeSheet; $('#bClose').focus();
 }
 let toastT = 0;
-function toast(m) { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => (t.style.display = 'none'), 2200); }
+// お知らせ（クロスレビュー 2026-10-26：2.2秒で 消えて 読みきれなかった）。歩いて いる ときは 押すまで のこる。
+// 窓の 中で 出した もの（「手帳に書きました」など）は 窓の 上に 4秒。のこって いる お知らせは、窓を 開くと かくれて、閉じると もどる
+let toastHeld = false;
+function toast(m) {
+  const t = $('#toast'); $('#toastMsg').textContent = m; t.style.display = 'flex'; clearTimeout(toastT); toastHeld = false;
+  t.classList.toggle('brief', !!S.open);
+  if (S.open) toastT = setTimeout(hideToast, 4000);
+}
+function hideToast() { clearTimeout(toastT); toastHeld = false; $('#toast').style.display = 'none'; }
 
 /* ===== 動き ===== */
 function placeName(x, z) {
@@ -5685,7 +5704,8 @@ function wire() {
   $('#btnForm').onclick = () => (S.ch.open < 3 || !S.mine ? toast('フォーメーションは、第2章の 依頼で 使うよ') : S.p.done ? (S.story.c2act === 'yuki' ? (S.y.checked ? openYForm() : openYuki()) : S.story.c2act === 'matsuri' ? (S.m.kitsuke ? openMForm() : openMatsuri()) : openForm()) : S.p.started ? openPForm() : toast('まずは ギルドの入口の ツムギに 話しかけよう'));
   $('#btnNote').onclick = () => openNote();
   $('#btnBench').onclick = startBench; $('#btnPerfSet').onclick = openPerfSet;
-  $('#overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay') closeSheet(); });
+  $('#overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay') nudgeSheet(); });
+  $('#toast').onclick = hideToast;
   addEventListener('resize', resize);
 }
 function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); }
