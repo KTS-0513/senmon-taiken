@@ -2304,25 +2304,30 @@ function tripSteps(ev, ch) {
       hint: '肌側の「乾きやすい」を見よう（まぜた布は、苦手が1段上がる）。帰る前の行動でも かわるかも' },
   ];
 }
-// 第2章の 町の依頼（3つ）。どれか 2つが ★2いじょうで 章が おわる
+// 第2章の 町の依頼（3つ）。本人決定 2026-10-26（クロスレビュー：2つでは 50分に 入らない・和服は 全員に）：
+// ゆかたの 合わせ方を ギルドで 全員が たしかめ、依頼は 1つ えらんで ★2いじょうで 章が おわる（ほかの 依頼は あとで できる）
 const C2Q = () => ({
   iwai: { Q: S.q, D: QUEST, started: S.q.appraised, mx: askMax(), nm: 'お祝いの式', p: 'おばあさん', spot: GRANNY_SPOT },
   yuki: { Q: S.y, D: YQ, started: S.y.checked, mx: yAskMax(), nm: '雪の峠', p: 'ゆうびん屋さん', spot: POST_SPOT },
-  matsuri: { Q: S.m, D: MQ, started: S.m.asked.length > 0 || S.m.kitsuke, mx: mAskMax(), nm: '夏祭りの村', p: 'ヒナタ', spot: MATSURI_SPOT },
+  matsuri: { Q: S.m, D: MQ, started: S.m.asked.length > 0 || S.m.stage > 0, mx: mAskMax(), nm: '夏祭りの村', p: 'ヒナタ', spot: MATSURI_SPOT },
 });
 function renderC2() {
   if (!S.p.done) return renderPQuest();
   const T = C2Q(), A = T[S.story.c2act] || T.iwai, Q = A.Q, D = A.D, cur = Q.done ? 4 : Q.stage;
   const steps = STEPS.map((x0, i) => { const x = `${'①②③④'[i]}${x0}${i === 0 && A.started ? ` ${Q.asked.length}/${A.mx}` : ''}`; return i === cur ? `<b class="now">${x}</b>` : i < cur ? `<span class="did">${x}</span>` : `<span>${x}</span>`; }).join(' → ');
-  const sub = c2Ready() && !S.ch.done.includes(3) ? '<b class="now">いま</b>：町の依頼が 2つ ★2いじょう！ ギルドの ツムギに 報告しよう'
+  const sub = c2Ready() && !S.ch.done.includes(3) ? '<b class="now">いま</b>：町の依頼が ★2いじょう！ ギルドの ツムギに 報告しよう'
+    : c2NeedKitsuke() ? '<b class="now">いま</b>：ギルドの ツムギに 話しかけて、ゆかたの 合わせ方を たしかめよう'
     : Q.best ? `いちばん よかった結果 ${stars3(Q.best)}　気持ち ${'●'.repeat(Q.hearts)}${'○'.repeat(3 - Q.hearts)}${Q.done ? '　達成！' : ''}`
     : A.started && S.story.c2act === 'matsuri' && !S.m.kitsuke ? 'ヒナタと、ゆかたの 着方を たしかめよう'
     : A.started ? `${A.p}の 話を 聞いて、服を 仕立てよう` : `${D.who}に 話しかけよう（赤い ！）`;
   $('#quest').innerHTML = `<small>依頼</small><br><b>${D.name}</b>　${D.who}<br><span class="steps">${steps}</span><br><span class="steps">${sub}</span>
-    <br><span class="steps" style="color:#5a6582">町の依頼（2つを ★2に）：お祝いの式 ${stars3(S.q.best)}・雪の峠 ${stars3(S.y.best)}・夏祭りの村 ${stars3(S.m.best)}</span>`;
+    <br><span class="steps" style="color:#5a6582">${S.m.kitsuke ? '' : 'ゆかたの 合わせ方（ツムギ）：まだ<br>'}町の依頼（1つ えらんで ★2に）：お祝いの式 ${stars3(S.q.best)}・雪の峠 ${stars3(S.y.best)}・夏祭りの村 ${stars3(S.m.best)}</span>`;
 }
 const stars3 = (b) => `${'★'.repeat(b || 0)}${'☆'.repeat(3 - (b || 0))}`;
-const c2Ready = () => [S.q.best, S.y.best, S.m.best].filter((b) => b >= 2).length >= 2;
+const c2Any = () => [S.q.best, S.y.best, S.m.best].some((b) => b >= 2);
+const c2Ready = () => S.m.kitsuke && c2Any();
+// いま ギルドで 合わせ方を たしかめる 番か（依頼の とちゅうなら、その 依頼を 先に）
+const c2NeedKitsuke = () => { if (S.m.kitsuke) return false; const A = C2Q()[S.story.c2act]; return !(A && A.started && A.Q.best < 2); };
 function openTalk() {
   const q = S.q; S.story.c2act = 'iwai';
   if (S.ch.open < 3) {   // 第2章の前：まだ 依頼は ない
@@ -2566,7 +2571,7 @@ function openLook(ev, ch) {
       <p style="font-size:14px;margin:10px 0 0"><b>理由</b>：${gl(r.t)}<br>→ ${gl(rLine)}</p>
       ${unheard.length ? `<p style="font-size:14px;margin:10px 0 0"><b>聞いていなかった ようす</b>（旅でわかった。依頼メモに のせた）${unheard.map((x) => `<br>・${gl(x.memo)}`).join('')}</p>` : ''}
       ${q.tries === 1 ? '<p class="sub" style="margin:6px 0 0">旅のあと、聞き込みが もう2つ できる</p>' : ''}
-      ${c2Ready() && !S.ch.done.includes(3) ? '<p class="sub" style="margin:6px 0 0;color:var(--akane)">町の依頼が 2つ ★2いじょうに なった！ ギルドの ツムギに 報告しよう</p>' : ''}
+      ${c2Ready() && !S.ch.done.includes(3) ? '<p class="sub" style="margin:6px 0 0;color:var(--akane)">町の依頼が ★2いじょうに なった！ ギルドの ツムギに 報告しよう（ほかの 依頼も、あとで できるよ）</p>' : ''}
       ${ng.length ? '<p class="sub" style="margin:6px 0 0">てもちに 合う子が いなければ、地方を 歩いて なかまを さがそう（左下の「入れかえ」で てもちを 入れかえる）</p>' : ''}
       <p style="font-size:14px;margin:10px 0 4px"><b>手帳に1行</b>（わかったこと・次に変えること）</p>
       <textarea id="note" style="width:100%;box-sizing:border-box;height:52px;font:inherit;font-size:14px"></textarea>
@@ -2763,8 +2768,8 @@ function npcHint() {
   const c = curCh();
   const t = S.ch.done.includes(7) ? '旅は つづく！ 図鑑・洗い場・依頼の ★3、寄り道を 楽しもう。'
     : c == null ? '次の章は、先生が ひらいたら 始まるよ。それまで 大陸を 歩いて、センモンに 会おう！'
-    : c === 3 ? (!S.p.done ? 'いまは、ギルドの入口の ツムギに 話しかけて、れんしゅうの依頼を 受けよう。' : c2Ready() ? 'いまは、ギルドの ツムギに 報告しよう。町の依頼が 2つ ★2いじょう！'
-      : `いまは、町の依頼。式典の町の おばあさん（${stars3(S.q.best)}）・峠の ゆうびん屋さん（${stars3(S.y.best)}）・夏祭りの村の ヒナタ（${stars3(S.m.best)}）の うち、2つを ★2いじょうに しよう。`)
+    : c === 3 ? (!S.p.done ? 'いまは、ギルドの入口の ツムギに 話しかけて、れんしゅうの依頼を 受けよう。' : c2Ready() ? 'いまは、ギルドの ツムギに 報告しよう。町の依頼が ★2いじょう！' : c2NeedKitsuke() ? 'いまは、ギルドの ツムギに 話しかけて、ゆかたの 合わせ方を たしかめよう。'
+      : `いまは、町の依頼。式典の町の おばあさん（${stars3(S.q.best)}）・峠の ゆうびん屋さん（${stars3(S.y.best)}）・夏祭りの村の ヒナタ（${stars3(S.m.best)}）の うち、1つを えらんで ★2いじょうに しよう。`)
     : `いまは、${goalLine(c)}。`;   // 第2章の 行き先は renderC2 と 同じ 言い方
   return S.aibo ? { who: aiNm(), t: aiSnd() + t } : { scr: `いま：${t}` };
 }
@@ -2791,10 +2796,11 @@ function talkNear() {
 function openTsumugiC2() {
   const p = S.p;
   if (p.done) {
+    if (!S.m.kitsuke && !S.ch.done.includes(3)) return openMKitsuke(true);
     if (c2Ready() && !S.ch.done.includes(3)) return c2End();
-    openSheet(`<h2>ギルド長ツムギ</h2>${say('ツムギ', '町から 依頼が 3つ 来ているよ。式典の町の おばあさんと、峠の ゆうびん屋さんは ギルドの前。夏祭りの村の ヒナタは、南西の 村で まっている。どれから でも いいよ。')}
-      ${say('ツムギ', '3つの うち 2つが ★2いじょうに なったら、報告に おいで。こまったら、右下の「あそびかた」を 見てごらん。')}
-      <div class="memo"><b>町の依頼</b>（3つの うち 2つを ★2いじょうに）<br>・お祝いの式（式典の町の おばあさん）　${stars3(S.q.best)}<br>・雪の峠（峠の ゆうびん屋さん）　${stars3(S.y.best)}<br>・夏祭りの村（夏祭りの村の ヒナタ）　${stars3(S.m.best)}</div>
+    openSheet(`<h2>ギルド長ツムギ</h2>${say('ツムギ', '町から 依頼が 3つ 来ているよ。式典の町の おばあさんと、峠の ゆうびん屋さんは ギルドの前。夏祭りの村の ヒナタは、南西の 村で まっている。')}
+      ${say('ツムギ', 'どれか 1つを えらんで、★2いじょうに なったら 報告に おいで。ほかの 依頼も、あとで できるよ。こまったら、右下の「あそびかた」を 見てごらん。')}
+      <div class="memo"><b>町の依頼</b>（1つ えらんで ★2いじょうに）<br>・お祝いの式（式典の町の おばあさん）　${stars3(S.q.best)}<br>・雪の峠（峠の ゆうびん屋さん）　${stars3(S.y.best)}<br>・夏祭りの村（夏祭りの村の ヒナタ）　${stars3(S.m.best)}</div>
       <div class="row"><button id="bHelp">あそびかた</button><button class="main" id="bClose">とじる</button></div>`);
     $('#bHelp').onclick = () => openHelp(0); $('#bClose').onclick = closeSheet; return;
   }
@@ -2894,9 +2900,9 @@ function openPLook(st) {
     <table class="tb"><tr><th>場面</th><th>見た所</th><th>結果</th></tr>${sc.map((s) => `<tr><td>${s.name}</td><td>${gl(s.see)}</td><td><span class="chip ${s.ok ? 'ok' : 'ng'}">${s.ok ? 'ねがいに合っている' : 'まだ'}</span></td></tr>`).join('')}</table>
     ${ng.length ? `<p style="font-size:14px;margin:10px 0 0"><b>困る声</b>${ng.map((s) => `<br>・<span class="voice">なかま「${gl(s.msg)}」</span><br>　<small>手がかり：${gl(s.hint)}</small>`).join('')}</p><p class="sub" style="margin:6px 0 0">てもちに 合う子が いなければ、地方を 歩いて なかまを さがそう（左下の「入れかえ」）</p>` : ''}
     <p style="font-size:14px;margin:10px 0 0"><b>理由</b>：${gl(r.t)}<br>→ ${gl(rLine)}</p>
-    ${fin ? say('ツムギ', 'よくできたね。場面を 思いうかべて 選べたね。これで 一人前への 第一歩。') + say('ツムギ', 'さあ、町の依頼も 受けられるよ。ギルドの前の道に、こまっている おばあさんが いるみたい。町の依頼では、★のほかに、依頼人の 気持ちに よりそえたかも 見るよ。') : ''}
-    <div class="row">${fin ? '<button class="main" id="bDone">町の依頼へ</button>' : '<button class="main" id="bRe">直して もう一度</button>'}<button id="bClose">とじる</button></div>`);
-  if (fin) $('#bDone').onclick = () => { p.done = true; renderQuest(); closeSheet(); saveGame(); toast('町の依頼が 3つ 受けられるように なった！（お祝いの式・雪の峠・夏祭りの村）'); };
+    ${fin ? say('ツムギ', 'よくできたね。場面を 思いうかべて 選べたね。これで 一人前への 第一歩。') + say('ツムギ', 'さあ、町の依頼だよ。その 前に、仕立て屋の きほんを ひとつ。ゆかたの 合わせ方を たしかめよう。町の依頼では、★のほかに、依頼人の 気持ちに よりそえたかも 見るよ。') : ''}
+    <div class="row">${fin ? `<button class="main" id="bDone">${S.m.kitsuke ? '町の依頼へ' : 'つぎへ：ゆかたの 合わせ方'}</button>` : '<button class="main" id="bRe">直して もう一度</button>'}<button id="bClose">とじる</button></div>`);
+  if (fin) $('#bDone').onclick = () => { p.done = true; renderQuest(); saveGame(); if (!S.m.kitsuke) return openMKitsuke(true); closeSheet(); toast('町の依頼が 3つ 受けられるように なった！ 1つ えらんで ★2いじょうに しよう'); };
   else $('#bRe').onclick = openPForm;
   $('#bClose').onclick = closeSheet;
 }
@@ -2911,7 +2917,7 @@ const HELP = [
   { h: 'なかまと てもち', who: 'ピンコ', say: 'チクッ！ 地方を 歩くと、センモンに 出会えるよ。話しかけて、なかまに しよう！',
     body: '<ul><li>植物の平原＝綿・麻／動物の高原＝毛・絹／化学の都＝合成の4つ</li><li>話しかけると、センモンから 2つの 問い（なかまの しるし）。教科書の 表1を 見て 答えると、なかまに なる</li><li>なかまに なると、図鑑に のって、旅に ついてくる</li><li>てもちは 4体まで。あふれた子は あずかり所へ</li><li>左下の「入れかえ」で、依頼に 合わせて 入れかえる。合う子が いなければ、さがしに 行こう</li></ul>' },
   { h: '依頼の 進め方', who: 'ツムギ', say: '依頼は、いつも この4つの順に 進むよ。右上の「依頼」の欄に、いまの段階が 赤い字で 出る。',
-    body: '<p class="flow">① 聞き込み → ② フォーメーション → ③ 旅 → ④ ふりかえり　→（直して もう一度）</p><ul><li>うまくいかなくても、何度でも 直せる</li><li>第2章の 町の依頼は 3つ（お祝いの式・雪の峠・夏祭りの村）。どれか 2つを ★2いじょうに すると、ギルドの ツムギに 報告できる</li><li>夏祭りの村の 依頼では、フォーメーションの 前に、ゆかたの 着方（合わせ方）を たしかめる</li><li>右下の「フォーメーション」ボタンからも、組み方の画面を ひらける</li></ul>' },
+    body: '<p class="flow">① 聞き込み → ② フォーメーション → ③ 旅 → ④ ふりかえり　→（直して もう一度）</p><ul><li>うまくいかなくても、何度でも 直せる</li><li>第2章は、はじめに ギルドで ゆかたの 合わせ方を たしかめる。町の依頼は 3つ（お祝いの式・雪の峠・夏祭りの村）。どれか 1つを ★2いじょうに すると、ギルドの ツムギに 報告できる（ほかの 依頼も、あとで できる）</li><li>右下の「フォーメーション」ボタンからも、組み方の画面を ひらける</li></ul>' },
   { h: '① 聞き込み', who: 'ツムギ', say: '聞ける数は 決まっている。何を 聞くか、よく えらぼう。',
     body: '<ul><li>「ようす」：その日の 予定や 場所。どんな能力が 要るかが 分かる</li><li>「気持ち」：依頼人の 心配や、大事にしているもの</li><li>聞いたことは「依頼メモ」に のる</li><li>聞けなかったことは、旅で 分かることも ある</li></ul>' },
   { h: '② フォーメーション', who: 'メジャ丸', say: 'シュルルッ……センモンを 布の 欄に 置いて、服を 仕立てるよ！',
@@ -3318,7 +3324,7 @@ const TAIKEN_CH = [
   { k: 'birth', ch: 1, ic: 'egg', t: 'センモン誕生', when: '第2時', min: 5, learn: '担当の 繊維・名前・色を 決めて、自分の センモンを 生む' },
   { k: 'c1', ch: 2, ic: 'castle', t: '第1章「糸と布の塔」', when: '第3時', min: 10, learn: '繊維 → 糸 → 布（織物・編物・不織布）と、混用（合体）' },
   { k: 'c2p', ch: 3, ic: 'school', t: '第2章 れんしゅう「真夏の学校の肌着」', when: '第4時', min: 5, learn: '聞き込み → フォーメーション → 旅 → ふりかえり の 進め方' },
-  { k: 'c2', ch: 3, ic: 'checkroom', t: '第2章 町の依頼（お祝いの式・雪の峠・夏祭りの村）', when: '第4時', min: 15, learn: '着る人の ねがいと 場面に 合わせ、重ね着と 混用で 服を 仕立てる。和服（ゆかた）の 着方も' },
+  { k: 'c2', ch: 3, ic: 'checkroom', t: '第2章 町の依頼（お祝いの式・雪の峠・夏祭りの村）', when: '第4時', min: 17, learn: 'ゆかたの 合わせ方（右前）を たしかめてから、町の依頼を 1つ えらぶ。着る人の ねがいと 場面に 合わせ、重ね着と 混用で 服を 仕立てる' },
   { k: 'c3', ch: 4, ic: 'local_laundry_service', t: '第3章「ヨゴレンのいたずら」', when: '第5時', min: 15, learn: '取扱い表示を 読んで 洗う・推理の 時間' },
   { k: 'c5', ch: 5, ic: 'content_cut', t: '針と糸のわざ', when: '基礎縫いの あと', min: 5, learn: 'ほつれ・ボタン・すそを、合う 縫い方で 直す' },
   { k: 'c6', ch: 6, ic: 'workspace_premium', t: '終章「一人前の試験」', when: '第8(9)時', min: 10, learn: 'キットを 繊維の 知識で 読み解き、装備カードを つくる' },
@@ -3515,7 +3521,7 @@ function goalSpot() {
   if (c === 1) return tsu;
   if (c === 2) { const k = S.story.c1; return k === 'tower' || k === 'touge' ? SPOTS[k] : k === 'done' ? null : tsu; }
   if (c === 3) {
-    if (!S.p.done || c2Ready()) return tsu;
+    if (!S.p.done || c2Ready() || c2NeedKitsuke()) return tsu;
     const T = C2Q(), at = (a) => ({ x: T[a].spot[0], z: T[a].spot[2], y: a === 'matsuri' ? 4.0 : 4.3 });
     if (T[S.story.c2act] && T[S.story.c2act].Q.best < 2) return at(S.story.c2act);
     const nx = ['iwai', 'yuki', 'matsuri'].find((a) => T[a].Q.best < 2); return nx ? at(nx) : tsu;
@@ -3542,8 +3548,9 @@ function goalLine(c) {
   if (c === 1) return 'ギルドの入口の ツムギに 話しかけて、糸玉から センモンを 生まれさせよう';
   if (c === 2) return C1_GOAL[S.story.c1] || '';
   if (c === 3) return !S.p.done ? 'ギルドの入口の ツムギに 話しかけて、れんしゅうの依頼を 受けよう'
-    : c2Ready() ? '町の依頼が 2つ ★2いじょう！ ギルドの ツムギに 報告しよう'
-    : '町の依頼：おばあさん・ゆうびん屋さん・夏祭りの村の ヒナタの うち、2人の 依頼を ★2いじょうに しよう（赤い ！）';
+    : c2Ready() ? '町の依頼が ★2いじょう！ ギルドの ツムギに 報告しよう'
+    : c2NeedKitsuke() ? 'ギルドの ツムギに 話しかけて、ゆかたの 合わせ方を たしかめよう'
+    : '町の依頼：おばあさん・ゆうびん屋さん・夏祭りの村の ヒナタの うち、1人を えらんで ★2いじょうに しよう（赤い ！）';
   if (c === 4) return C3_GOAL[S.story.c3] || '';
   if (c === 5) return C5_GOAL[S.story.c5 || 'start'] || '';
   if (c === 6) return C6_GOAL[S.story.c6 || 'start'] || '';
@@ -4285,7 +4292,7 @@ function openYCheck() {
   $('#sheet').querySelectorAll('[data-c]').forEach((b) => (b.onclick = () => {
     const i = +b.dataset.c;
     if (!Y_CHECK[i].ok) { y.guess = i; return openYCheck(); }
-    y.checked = true; y.guess = null; addNazo('峠の ゆうびん屋さんの 毛の セーターは、マトイさんの 無料の 洗濯サービスの あとで 縮んでいた（もみ洗い）', 5); renderQuest(); saveGame();
+    y.checked = true; y.guess = null; addNazo(NAZO_SWEATER, 5); renderQuest(); saveGame();
     openSheet(`<h2>縮んだ わけは「もみ洗い」</h2><p class="sub">${gl('表1：毛は、もみ洗いを すると 縮む')}</p>
       ${say('ゆうびん屋さん', 'そう、もみ洗い されたのね……。マトイさんの 無料の 洗濯サービスに 出したのよ。毛の 服も、ほかの 服と いっしょに、ごしごし 洗った みたい。')}
       ${say('ゆうびん屋さん', 'もう、峠は 寒くて……。どんな 服なら いいかしら。')}
@@ -4360,7 +4367,7 @@ function openYLook(ev, ch) {
   const stars = Math.max(1, 3 - Math.min(2, ng.length) - (rOk ? 0 : 1));
   const unheard = Y_ASKS.filter((x) => x.kind === 'ようす' && !y.found.includes(x.id));
   Y_ASKS.forEach((x) => { if (x.kind === 'ようす' && !y.found.includes(x.id)) y.found.push(x.id); });   // 旅を すると、聞いていなかった「ようす」も わかる
-  addNazo('峠の 村の 入口に、つぎはぎの 切れはしと「おもいだして」と 書いた 紙。ボロンの いたずら……？', 6);
+  addNazo(NAZO_OMOIDASHITE, 6);
   const waitOk = sc.find((x) => x.id === 'wait').ok;
   const hearts = [
     { ok: Y_ASKS.some((x) => x.kind === '気持ち' && y.asked.includes(x.id)), t: 'ゆうびん屋さんの 気持ちを 聞いた', hint: '「気持ち」の 質問も してみよう' },
@@ -4385,7 +4392,7 @@ function openYLook(ev, ch) {
       ${unheard.length ? `<p style="font-size:14px;margin:10px 0 0"><b>聞いていなかった ようす</b>（旅で わかった。依頼メモに のせた）${unheard.map((x) => `<br>・${gl(x.memo)}`).join('')}</p>` : ''}
       ${y.tries === 1 ? '<p class="sub" style="margin:6px 0 0">旅の あと、聞き込みが もう2つ できる</p>' : ''}
       ${ng.length ? '<p class="sub" style="margin:6px 0 0">てもちに 合う子が いなければ、地方を 歩いて なかまを さがそう（左下の「入れかえ」で てもちを 入れかえる）</p>' : ''}
-      ${c2Ready() && !S.ch.done.includes(3) ? '<p class="sub" style="margin:6px 0 0;color:var(--akane)">町の依頼が 2つ ★2いじょうに なった！ ギルドの ツムギに 報告しよう</p>' : ''}
+      ${c2Ready() && !S.ch.done.includes(3) ? '<p class="sub" style="margin:6px 0 0;color:var(--akane)">町の依頼が ★2いじょうに なった！ ギルドの ツムギに 報告しよう（ほかの 依頼も、あとで できるよ）</p>' : ''}
       <p style="font-size:14px;margin:10px 0 4px"><b>手帳に1行</b>（わかったこと・次に変えること）</p>
       <textarea id="note" style="width:100%;box-sizing:border-box;height:52px;font:inherit;font-size:14px"></textarea>
       ${y.notes.length ? `<p class="sub" style="margin:4px 0 0">これまでの手帳：${y.notes.map(esc).join('／')}</p>` : ''}
@@ -4469,34 +4476,38 @@ function openMatsuri() {
 function openMTalk() {
   const m = S.m, max = mAskMax(), left = max - m.asked.length; S.story.c2act = 'matsuri'; renderQuest();
   openSheet(`<h2>${MQ.who}</h2><p class="sub">① 聞き込み：聞けるのは ${max}つまで（あと ${left}つ）。「ようす」と「気持ち」から 選ぶ。聞いたことは 依頼メモに のる</p>
-    ${(m.asked.length || m.kitsuke ? M_OPEN.slice(1) : M_OPEN).map((x) => say('ヒナタ', x)).join('')}
+    ${(m.asked.length ? M_OPEN.slice(1) : M_OPEN).map((x) => say('ヒナタ', x)).join('')}
     ${M_ASKS.filter((x) => m.asked.includes(x.id)).map((x) => `<p class="ask">${me()}「${x.ask}」<br><span class="voice">ヒナタ「${gl(x.ans)}」</span></p>`).join('')}
     ${['ようす', '気持ち'].map((kind) => { const rest = M_ASKS.filter((x) => x.kind === kind && !m.asked.includes(x.id)); return rest.length ? `<p class="kind">${kind}を 聞く</p><div class="asks">${rest.map((x) => `<button data-a="${x.id}"${left ? '' : ' disabled'}>${x.ask}</button>`).join('')}</div>` : ''; }).join('')}
     ${left ? '' : `<p class="sub" style="margin-top:6px">もう 聞けない。${m.tries ? '' : '聞けなかった ことは、旅で たしかめよう（旅の あと、もう2つ 聞ける）'}</p>`}
     <div class="row"><button class="main" id="bNext">${m.kitsuke ? '② フォーメーションへ' : 'つぎへ：ゆかたの 着方を たしかめる'}</button><button id="bClose">とじる</button></div>`);
   $('#sheet').querySelectorAll('[data-a]').forEach((b) => (b.onclick = () => { const id = b.dataset.a; m.asked.push(id); if (!m.found.includes(id)) m.found.push(id); renderQuest(); openMTalk(); }));
-  $('#bNext').onclick = m.kitsuke ? openMForm : openMKitsuke; $('#bClose').onclick = closeSheet;
+  $('#bNext').onclick = m.kitsuke ? openMForm : () => openMKitsuke(false); $('#bClose').onclick = closeSheet;
 }
 // ゆかたの 着方（夕方の したく）：合わせ方を 2つから えらぶと、トルソーの ゆかたが かわる。右前で 先へ
-function openMKitsuke() {
-  const m = S.m; S.story.c2act = 'matsuri'; FSEL = null; renderQuest();
+// guild＝ギルド版（本人決定 2026-10-26）：れんしゅうの あと、全員が ツムギと たしかめる（ヒナタからの 手紙）。和服は 全員が 触れる（学習指導要領 内容の取扱い カ）
+function openMKitsuke(guild) {
+  if (guild !== undefined) S.m.gk = !!guild;   // 引数なしで 描き直す ときは、前の 版の まま
+  const g = !!S.m.gk;
+  const m = S.m; if (!g) S.story.c2act = 'matsuri'; FSEL = null; renderQuest();
   const pic = (dir) => torsoSvg({ layers: [{ k: 'out' }, { k: 'mid', lock: '-' }, { k: 'skin' }], get: () => null, yukata: dir, paint: M_PAINT });
   const bare = () => torsoSvg({ layers: [{ k: 'mid', lock: '-' }, { k: 'skin' }], get: () => null, paint: { skin: M_PAINT.skin } });
   const opts = [['L', '左の 身ごろを 先に 体に 合わせて、右の 身ごろを 上に 重ねる'], ['R', '右の 身ごろを 先に 体に 合わせて、左の 身ごろを 上に 重ねる']];
-  openSheet(`<h2>ゆかたの 着方：夕方の したく</h2><p class="sub">${gl('ヒナタは、祭りの 日の 夕方、自分で ゆかたを 着る。おばあちゃんの ゆかたで、前の 合わせ方を たしかめよう（教科書の 和服の ページを 見てよい）')}</p>
-    ${say('ヒナタ', 'ゆかたって、前を 重ねて 着るんだよね。でも、右と 左、どっちを 上に するんだっけ……？')}
+  openSheet(`<h2>ゆかたの 着方${g ? '：町へ 行く 前に' : '：夕方の したく'}</h2><p class="sub">${gl(g ? '夏祭りの村の ヒナタは、祭りの 日の 夕方、はじめて 自分で ゆかたを 着る。町の依頼を えらぶ 前に、みんなで 前の 合わせ方を たしかめよう（教科書の 和服の ページを 見てよい）' : 'ヒナタは、祭りの 日の 夕方、自分で ゆかたを 着る。おばあちゃんの ゆかたで、前の 合わせ方を たしかめよう（教科書の 和服の ページを 見てよい）')}</p>
+    ${g ? say('ツムギ', 'ヒナタから 手紙が 来たよ。「ゆかたって、前を 重ねて 着るんだよね。でも、右と 左、どっちを 上に するんだっけ……？」') : say('ヒナタ', 'ゆかたって、前を 重ねて 着るんだよね。でも、右と 左、どっちを 上に するんだっけ……？')}
     <div class="kitsuke"><div class="ktorso">${m.awase ? pic(m.awase) : bare()}<p class="tcap">${m.awase ? '前から 見た ところ' : '合わせ方を えらぶと、ゆかたを 着る'}</p></div>
       <div class="kopts"><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>どちらの 合わせ方で 着る？ えらぶと、絵が かわる</span></p>
         <p class="sub" style="margin:0 0 2px">右・左は、着る人（ヒナタ）から 見た 右・左</p>
         ${opts.map(([d, t]) => `<button class="kopt${m.awase === d ? ' on' : ''}" data-aw="${d}" aria-pressed="${m.awase === d}">${t}</button>`).join('')}
-        ${m.ng ? `<div class="khint">${say('ヒナタ', 'あれ？ おばあちゃんが「その 合わせ方は、いつもと 反対だよ」って……。')}${lnHtml({ who: aiNm(), t: aiSnd() + '衿の 重なり方を 見よう。ギルドの ツムギさんは、いつも 着物を きちんと 着ているよ。前から 見ると、衿は どんな 形かな？ 教科書の 和服の ページとも くらべてみよう。' })}</div>` : ''}
+        ${m.ng ? `<div class="khint">${g ? say('ツムギ', 'おや、その 合わせ方は、ふだんとは 反対だよ。') : say('ヒナタ', 'あれ？ おばあちゃんが「その 合わせ方は、いつもと 反対だよ」って……。')}${lnHtml({ who: aiNm(), t: aiSnd() + '衿の 重なり方を 見よう。ギルドの ツムギさんは、いつも 着物を きちんと 着ているよ。前から 見ると、衿は どんな 形かな？ 教科書の 和服の ページとも くらべてみよう。' })}</div>` : ''}
       </div></div>
-    <div class="row"><button id="bBack">① 聞き込みへ</button><button class="main" id="bWear"${m.awase ? '' : ' disabled'}>この 合わせ方で 着る</button></div>`, true);
+    <div class="row"><button id="bBack">${g ? 'とじる' : '① 聞き込みへ'}</button><button class="main" id="bWear"${m.awase ? '' : ' disabled'}>この 合わせ方で 着る</button></div>`, true);
   $('#sheet').querySelectorAll('[data-aw]').forEach((b) => (b.onclick = () => { m.awase = b.dataset.aw; m.ng = false; openMKitsuke(); $('#bWear').focus(); }));
-  $('#bBack').onclick = openMTalk;
+  $('#bBack').onclick = g ? closeSheet : openMTalk;
   $('#bWear').onclick = () => {
     if (m.awase !== 'R') { m.miss++; m.ng = true; saveGame(); return openMKitsuke(); }
     m.kitsuke = true; m.ng = false; renderQuest(); saveGame();
+    if (g) return kitsukeGuildDone(pic);
     openSheet(`<h2>右前で 着られた！</h2><p class="sub">${gl('右前：着る人の 右の 身ごろを 先に 体に 合わせ、左の 身ごろを 上に 重ねる。前から 見ると、衿が「y」の字に 見える')}</p>
       <div class="kitsuke"><div class="ktorso">${pic('R')}<p class="tcap">前から 見ると、衿が「y」の字</p></div>
       <div class="kopts">${say('ヒナタ', '右の 身ごろが 先、左が 上。これが 右前なんだね！')}${say('ヒナタ', '反対の 左前は、ふだんは 着ない 決まりなんだって。おばあちゃんが 言ってた。')}
@@ -4505,7 +4516,16 @@ function openMKitsuke() {
     $('#bForm').onclick = openMForm; $('#bClose').onclick = closeSheet; $('#bForm').focus();
   };
 }
-function openMForm() { FSEL = null; S.story.c2act = 'matsuri'; if (!S.m.kitsuke) return openMKitsuke(); mFormSheet(); }
+function kitsukeGuildDone(pic) {   // ギルド版の あと：教室で 実物を 見て、町の依頼を 1つ えらぶ
+  openSheet(`<h2>右前で 着られた！</h2><p class="sub">${gl('右前：着る人の 右の 身ごろを 先に 体に 合わせ、左の 身ごろを 上に 重ねる。前から 見ると、衿が「y」の字に 見える')}</p>
+    <div class="kitsuke"><div class="ktorso">${pic('R')}<p class="tcap">前から 見ると、衿が「y」の字</p></div>
+    <div class="kopts">${say('ツムギ', 'そう、右前。わたしの 衿も 同じ 形だろう？ 反対の 左前は、ふだんは 着ない 決まりなんだ。')}
+      <div class="class-talk"><span class="material-symbols-outlined" aria-hidden="true">groups</span><span>教室で：ゆかたの 実物で、衿の 重なり（右前）を 見よう。<b>先生の 合図を 待つ</b></span></div>
+      ${lnHtml(ai({ meja: 'シュルルッ……ヒナタにも 手紙で 教えてあげよう。さあ、町の依頼を 1つ えらぼう！', pinko: 'チクッ！ ヒナタにも 教えてあげよう！ さあ、町の依頼を えらぼう！', iro: 'シュー……ヒナタにも 教えてあげよう。さあ、町の依頼を 1つ えらぼう。' }))}</div></div>
+    <div class="row"><button class="main" id="bPick">${c2Any() ? 'ツムギに 報告する' : '町の依頼を えらぶ'}</button></div>`, true);
+  $('#bPick').onclick = openTsumugiC2; $('#bPick').focus();
+}
+function openMForm() { FSEL = null; S.story.c2act = 'matsuri'; if (!S.m.kitsuke) return openMKitsuke(false); mFormSheet(); }
 function mFormSheet() {
   const m = S.m; if (m.stage < 1 || m.stage === 3) m.stage = 1; renderQuest();
   const ev = mEval(), ready = !!(ev.oL && ev.sL);
@@ -4583,7 +4603,7 @@ function openMLook(ev, ch) {
       ${unheard.length ? `<p style="font-size:14px;margin:10px 0 0"><b>聞いていなかった ようす</b>（旅で わかった。依頼メモに のせた）${unheard.map((x) => `<br>・${gl(x.memo)}`).join('')}</p>` : ''}
       ${m.tries === 1 ? '<p class="sub" style="margin:6px 0 0">旅の あと、聞き込みが もう2つ できる</p>' : ''}
       ${ng.length ? '<p class="sub" style="margin:6px 0 0">てもちに 合う子が いなければ、地方を 歩いて なかまを さがそう（左下の「入れかえ」で てもちを 入れかえる）</p>' : ''}
-      ${c2Ready() && !S.ch.done.includes(3) ? '<p class="sub" style="margin:6px 0 0;color:var(--akane)">町の依頼が 2つ ★2いじょうに なった！ ギルドの ツムギに 報告しよう</p>' : ''}
+      ${c2Ready() && !S.ch.done.includes(3) ? '<p class="sub" style="margin:6px 0 0;color:var(--akane)">町の依頼が ★2いじょうに なった！ ギルドの ツムギに 報告しよう（ほかの 依頼も、あとで できるよ）</p>' : ''}
       <p style="font-size:14px;margin:10px 0 4px"><b>手帳に1行</b>（わかったこと・次に変えること）</p>
       <textarea id="note" style="width:100%;box-sizing:border-box;height:52px;font:inherit;font-size:14px"></textarea>
       ${m.notes.length ? `<p class="sub" style="margin:4px 0 0">これまでの手帳：${m.notes.map(esc).join('／')}</p>` : ''}
@@ -4593,15 +4613,23 @@ function openMLook(ev, ch) {
   };
   draw();
 }
-// 第2章の おわり：3つの 町の依頼の うち 2つが ★2いじょう → ③ 装いのボタン
+// 第2章の おわり：ゆかたの 合わせ方（全員）＋ 町の依頼 1つが ★2いじょう → ③ 装いのボタン（本人決定 2026-10-26）
+const NAZO_SWEATER = '峠の ゆうびん屋さんの 毛の セーターは、マトイさんの 無料の 洗濯サービスの あとで 縮んでいた（もみ洗い）';
+const NAZO_OMOIDASHITE = '峠の 村の 入口に、つぎはぎの 切れはしと「おもいだして」と 書いた 紙。ボロンの いたずら……？';
 function c2End() {
+  const noYuki = !S.nazo.some((x) => x.f === 5);   // 雪の峠を えらばなかった 人にも、第3章の 推理の 手がかりを ツムギの 話で わたす
+  if (noYuki) { addNazo(NAZO_SWEATER, 5); addNazo(NAZO_OMOIDASHITE, 6); }
   talkSeq('ギルド長ツムギ', [
     { who: 'ツムギ', t: '町の 依頼、よく がんばったね。依頼人の みんなが、よろこんでいたよ。' },
     { who: 'ツムギ', t: '服は、着る人と 場面に 合わせて 選ぶ。重ねる 順にも、まぜる 繊維にも、ぜんぶ 理由が あるんだ。' },
+    ...(noYuki ? [{ who: 'ツムギ', t: 'そうそう、峠の ゆうびん屋さんから 聞いたよ。毛の セーターが、マトイさんの 無料の 洗濯サービスの あとで 縮んだって。' },
+      { who: 'ツムギ', t: '峠の 村の 入口には、つぎはぎの 切れはしと「おもいだして」と 書いた 紙が あったそうだ。' }, { scr: '手帳に 2行 書いた' }] : []),
     ai({ meja: 'シュルルッ……でも、縮んだり 黄ばんだり した 服が、多かったね。', pinko: 'チクッ……でも、縮んだり 黄ばんだり した 服、多かったよね。', iro: 'シュー……でも、縮んだり 黄ばんだり した 服が、多かった……。' }),
     { who: 'ツムギ', t: '……洗濯の ことは、見習いには まだ 早いよ。さあ、これを。' },
     { scr: 'ツムギが、若草色の ボタンを わたす' },
     { who: 'ツムギ', t: '③ 装いのボタンだよ。' },
+    { who: 'ツムギ', t: 'クラスの なかまは、ちがう 依頼を 仕立てたはずだよ。だれの 服を、どう 組んだか、聞いてごらん。' },
+    { html: '<div class="class-talk"><span class="material-symbols-outlined" aria-hidden="true">groups</span><span>クラスで：ちがう 依頼を えらんだ 人と、組み方と 理由を 見せあおう。<b>よい 組み方は 1つでは ない</b></span></div>' },
   ], () => { S.story.c2 = 'done'; giveButton(3); endChapter(3); }, 'ボタンを もらう');
 }
 /* ----- 第3章「ヨゴレンのいたずら」（第5時・④ 洗いのボタン。台本 会話/第3章-ヨゴレンのいたずら.md）
@@ -5374,7 +5402,7 @@ function skipChapter(i) {
   }
   if (i === 3) {
     Object.assign(S.p, { started: true, done: true, best: Math.max(S.p.best, 3) });
-    Object.assign(S.q, { appraised: true, best: Math.max(S.q.best, 2) }); Object.assign(S.y, { checked: true, best: Math.max(S.y.best, 2) });
+    Object.assign(S.q, { appraised: true, best: Math.max(S.q.best, 2) }); Object.assign(S.y, { checked: true, best: Math.max(S.y.best, 2) }); S.m.kitsuke = true;
     S.story.c2 = 'done'; if (!S.buttons.includes(3)) S.buttons.push(3);
     [['峠の ゆうびん屋さんの 毛の セーターは、マトイさんの 無料の 洗濯サービスの あとで 縮んでいた（もみ洗い）', 5], ['峠の 村の 入口に、つぎはぎの 切れはしと「おもいだして」と 書いた 紙。ボロンの いたずら……？', 6]].forEach(([t, f]) => S.nazo.push({ ch: 3, t, f }));
   }
