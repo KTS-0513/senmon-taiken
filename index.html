@@ -285,6 +285,7 @@ body.cine .panel, body.cine #prompt { opacity:0; pointer-events:none; }
 .ctools button { display:inline-flex; align-items:center; gap:3px; font-size:13px; padding:6px 10px; }
 .ctools button.on { outline:2px solid var(--akane); outline-offset:-2px; background:#fbecc4; }
 .ctools .material-symbols-outlined { font-size:17px; }
+.need3 { color:var(--akane); font-weight:700; }   /* 依頼ごとに ◎を 求める 性質（2026-10-26） */
 .cnote { min-height:1.6em; margin:5px 0 0; font-size:13px; color:var(--akane); }
 .cex { margin-top:4px; padding-top:4px; border-top:1px dashed rgba(46,58,89,.3); font-size:12px; }
 @media (prefers-reduced-motion:reduce) { .csw svg { transition:none; } }
@@ -688,7 +689,7 @@ const FIB = {
   '麻':         { type: '植物', st: [3,1,3,2,1], waza: 'さらり（暑い場所の肌側で 困る声を1つ消す）', weak: '洗濯で縮み・しわ', iron: '高', det: '弱アルカリ性' },
   '毛':         { type: '動物', st: [2,3,2,2,3], waza: 'ぬくもり（まん中で あたたかさ がもう1段）', weak: 'もみ洗いで縮む・日光で黄ばむ・虫', iron: '中', det: '中性' },
   '絹':         { type: '動物', st: [1,2,2,2,2], waza: 'ひかり（式典・祭りの依頼で 注目の段に＋）', weak: 'こすれに弱い・日光で黄ばむ・虫', iron: '中', det: '中性' },
-  'ポリエステル': { type: '合成', st: [3,3,1,3,2], waza: '速乾（旅の時間で重くならない）', weak: '静電気・再汚染しやすい', iron: '中', det: '弱アルカリ性' },
+  'ポリエステル': { type: '合成', st: [3,3,1,3,2], waza: '速乾（肌側の 多いほうに 置くと、旅の時間で 重くならない）', weak: '静電気・再汚染しやすい', iron: '中', det: '弱アルカリ性' },
   'ナイロン':    { type: '合成', st: [3,3,1,3,2], waza: '耐久（外側で じょうぶさ がもう1段）', weak: '日光でやや黄ばむ', iron: '低', det: '弱アルカリ性' },
   'アクリル':    { type: '合成', st: [3,3,1,3,3], waza: 'ふんわり（まん中で あたたかさ＋）', weak: '毛玉ができやすい', iron: '低', det: '弱アルカリ性' },
   'ポリウレタン': { type: '合成', st: [3,3,1,3,2], waza: 'のびのび（動く依頼で 横の相手も動きやすく）', weak: '日光でやや黄ばむ', iron: '低', det: '弱アルカリ性' },
@@ -2272,8 +2273,9 @@ function evalForm() {
   const wrinkle = st(oL, oR, 1);
   let sweat = st(sL, sR, 2);
   if (sL && sL.fib === '綿') { if (sweat < 3) sweat++; notes.push(`${sL.name}（綿）のわざ【汗とり】：肌側の おもな センモンに 置くと、汗を吸う が もう1段`); }
-  const dry = st(sL, sR, 3), quick = [sL, sR].some((s) => s && s.fib === 'ポリエステル');
-  if (quick) notes.push(`${[sL, sR].find((s) => s && s.fib === 'ポリエステル').name}（ポリエステル）のわざ【速乾】：旅の時間で 重くならない`);
+  // 【速乾】は ポリエステルが 多いほう（65%）の ときだけ（本人決定 2026-10-26：タグの 65%と 35%の 順で 結果が かわるように）
+  const dry = st(sL, sR, 3), quick = !!(sL && sL.fib === 'ポリエステル');
+  if (quick) notes.push(`${sL.name}（ポリエステル）のわざ【速乾】：肌側の 多いほう（65%）に 置くと、旅の時間で 重くならない`); else if (sR && sR.fib === 'ポリエステル') notes.push('ポリエステルが 35%なので、わざ【速乾】は 出ない（多いほうに 置くと 出る）');
   [[oL, oR, '外側'], [sL, sR, '肌側']].forEach(([L, R, n]) => { if (L && R) notes.push(`${n}は 混用の布（まぜると、おもな センモンの 苦手が 1段 上がる。上がった所は △→○ のように 出る）`); });
   const hikari = !!(oL && oL.fib === '絹');
   if (hikari) notes.push(`${oL.name}（絹）のわざ【ひかり】：式典の依頼で、外側の 光沢が 映える（ただし 絹は こすれに弱い）`);
@@ -2293,9 +2295,9 @@ function tripSteps(ev, ch) {
     { ev: 'photo', short: '写真', name: '出来事　式のあと、孫と写真', q: '孫が かけよってきて、ぎゅっと だきついてきた！　おばあさんは どうする？',
       opts: ['服を 気にして、そっと はなれてもらう', 'そのまま、ぎゅっと だきしめる'],
       res: (c) => (c === 1 ? (ev.wrinkle >= 2 ? `しわを 気にしないで、ぎゅっと だきしめられたわ。いい写真に なりそう。${ev.hikari ? 'でも 絹は こすれに弱いから、あとで そっと 手入れしなくちゃ。' : ''}` : 'だきしめたら、しわが ついてしまったわ。写真に うつるかしら……') : '服を 気にして、はなれてもらったの。孫が さみしそうだったわ……') },
-    { id: 'hot', short: '食事', name: 'お祝いの食事　会場が あつい', see: '肌側の「汗を吸う」', ok: ev.sweat >= 2,
-      msg: W(ev.sweat, '汗を かいても、さらっと しているわ。', '少し べたつくけど、だいじょうぶ。', ev.sL ? '汗で べたべたして、落ちつかない…' : '中に着るものが ないわ…'),
-      hint: '肌側の「汗を吸う」を見よう' },
+    { id: 'hot', short: '食事', name: 'お祝いの食事　会場が あつい', see: '肌側の「汗を吸う」◎', ok: ev.sweat >= 3,
+      msg: W(ev.sweat, '汗を かいても、さらっと しているわ。', '会場が あつくて、汗が じわっと にじんできたわ…', ev.sL ? '汗で べたべたして、落ちつかない…' : '中に着るものが ないわ…'),
+      hint: '肌側の「汗を吸う」を見よう。あつい 会場なので ◎が ほしい（タグの 65%に どの 繊維を 置くかで かわる）' },
     { ev: 'rest', short: '帰る前', name: '出来事　食事のあと、帰る前', q: 'お祝いの食事で、汗を かいた。外は もう夕方。風の丘は ひえそう。',
       opts: ['すぐに 出発する', '汗が ひくまで、少し 休んでから 出発する'],
       res: (c) => (c === 1 ? '汗が ひくまで、少し 休んでから 出発したわ。' : 'すぐに 出発したわ。') },
@@ -2457,8 +2459,9 @@ function boardHtml(o) {
   };
   const res = (L) => {
     const A = o.get(L.k, 0) && byName(o.get(L.k, 0)), B = o.get(L.k, 1) && byName(o.get(L.k, 1));
-    if (!A) return `<div class="lres"><span class="see">この依頼で 見る所：${L.see.map((k) => gl(STAT[k])).join('・')}</span></div>`;
-    return `<div class="lres"><span class="ctag">${gl('タグ')}　${B ? `${A.fib} 65%　${B.fib} 35%` : `${A.fib} 100%`}</span>${L.see.map((k) => { const a = FIB[A.fib].st[k], f = L.res[k]; return `<span>${gl(STAT[k])} ${f !== a ? `<s>${SYM[a]}</s>→` : ''}<b>${SYM[f]}</b></span>`; }).join('')}</div>`;
+    const nd = (k) => (L.need && L.need[k] ? `<b class="need3">${SYM[L.need[k]]}が ほしい</b>` : '');   // 依頼ごとに ◎を 求める 性質（本人決定 2026-10-26）
+    if (!A) return `<div class="lres"><span class="see">この依頼で 見る所：${L.see.map((k) => `${gl(STAT[k])}${nd(k) ? ` ${nd(k)}` : ''}`).join('・')}</span></div>`;
+    return `<div class="lres"><span class="ctag">${gl('タグ')}　${B ? `${A.fib} 65%　${B.fib} 35%` : `${A.fib} 100%`}</span>${L.see.map((k) => { const a = FIB[A.fib].st[k], f = L.res[k]; return `<span>${gl(STAT[k])} ${f !== a ? `<s>${SYM[a]}</s>→` : ''}<b>${SYM[f]}</b>${L.need && L.need[k] && f < L.need[k] ? ` ${nd(k)}` : ''}</span>`; }).join('')}</div>`;
   };
   const layer = (L) => (L.lock ? `<div class="layer off"><span class="material-symbols-outlined" aria-hidden="true">lock</span><b>${LNAME[L.k]}</b>　${L.what}（${L.lock}）</div>`
     : `<div class="layer${selL === L.k ? ' pick' : ''}" data-k="${L.k}"><div class="lhead"><b>${gl(LNAME[L.k])}</b>　${L.what}</div><div class="band">${cell(L, 0)}${cell(L, 1)}</div>${res(L)}</div>`);
@@ -2502,7 +2505,7 @@ function formSheet() {
   const o = { layers: [
       { k: 'out', what: '上に 着る服（人から 見える）', see: [1], res: { 1: ev.wrinkle } },
       { k: 'mid', what: 'セーターなど', lock: 'この依頼では 使わない' },
-      { k: 'skin', what: '中に 着る服（肌に ふれる）', see: [2, 3], res: { 2: ev.sweat, 3: ev.dry } }],
+      { k: 'skin', what: '中に 着る服（肌に ふれる）', see: [2, 3], need: { 2: 3 }, res: { 2: ev.sweat, 3: ev.dry } }],
     get: (k, i) => S.form[k][i], set: (k, i, n) => { S.form[k][i] = n; }, hand: [1, 2, 3] };
   const need = () => [!ready && '外側と肌側に おもな センモンを 置く', q.reason == null && '理由を 1つ えらぶ'].filter(Boolean);
   const memo = [QUEST.memo0, ...(q.appraised ? ['晴れ着の布は 絹（日光で黄ばむ）'] : []), ...ASKS.filter((x) => q.found.includes(x.id)).map((x) => x.memo + (q.asked.includes(x.id) ? '' : '（旅でわかった）'))];
@@ -2629,9 +2632,9 @@ function spinClock() { const h = $('#sheet .dclock .hand'); if (h) requestAnimat
 function pEval() {
   const L = S.pform[0] ? byName(S.pform[0]) : null, R = S.pform[1] ? byName(S.pform[1]) : null, st = (k) => (L ? mixStat(L.fib, R && R.fib, k) : 0), notes = [];
   let sweat = st(2); if (L && L.fib === '綿') { if (sweat < 3) sweat++; notes.push(`${L.name}（綿）のわざ【汗とり】：肌側の おもな センモンに 置くと、汗を吸う が もう1段`); }
-  const dry = st(3), warm = st(4), quick = [L, R].some((s) => s && s.fib === 'ポリエステル'), asa = [L, R].find((s) => s && s.fib === '麻');
+  const dry = st(3), warm = st(4), quick = !!(L && L.fib === 'ポリエステル'), asa = [L, R].find((s) => s && s.fib === '麻');
   if (asa) notes.push(`${asa.name}（麻）のわざ【さらり】：暑い場所の肌側で、困る声を 1つ 消す`);
-  if (quick) notes.push(`${[L, R].find((s) => s && s.fib === 'ポリエステル').name}（ポリエステル）のわざ【速乾】：旅の時間で 重くならない`);
+  if (quick) notes.push(`${L.name}（ポリエステル）のわざ【速乾】：肌側の 多いほう（65%）に 置くと、旅の時間で 重くならない`); else if (R && R.fib === 'ポリエステル') notes.push('ポリエステルが 35%なので、わざ【速乾】は 出ない（多いほうに 置くと 出る）');
   if (L && R) notes.push(`肌側は 混用の布（まぜると、おもな センモンの 苦手が 1段 上がる。上がった所は △→○ のように 出る）`);
   return { L, R, sweat, dry, warm, quick, sarari: !!asa, notes };
 }
@@ -4236,8 +4239,8 @@ function yEval() {
   if (mL && mL.fib === '毛') { warm = up(warm); notes.push(`${mL.name}（毛）の わざ【ぬくもり】：まん中で、あたたかさ が もう1段`); }
   const acr = [mL, mR].find((x) => x && x.fib === 'アクリル'); if (acr) { warm = up(warm); notes.push(`${acr.name}（アクリル）の わざ【ふんわり】：まん中で、あたたかさ が もう1段`); }
   let sweat = st(sL, sR, 2); if (sL && sL.fib === '綿') { sweat = up(sweat); notes.push(`${sL.name}（綿）の わざ【汗とり】：肌側の おもな センモンに 置くと、汗を吸う が もう1段`); }
-  const sdry = st(sL, sR, 3), poly = [sL, sR].find((x) => x && x.fib === 'ポリエステル');
-  if (poly) notes.push(`${poly.name}（ポリエステル）の わざ【速乾】：旅の時間で 重くならない`);
+  const sdry = st(sL, sR, 3), poly = sL && sL.fib === 'ポリエステル' ? sL : null;
+  if (poly) notes.push(`${poly.name}（ポリエステル）のわざ【速乾】：肌側の 多いほう（65%）に 置くと、旅の時間で 重くならない`); else if (sR && sR.fib === 'ポリエステル') notes.push('ポリエステルが 35%なので、わざ【速乾】は 出ない（多いほうに 置くと 出る）');
   [[oL, oR, '外側'], [mL, mR, 'まん中'], [sL, sR, '肌側']].forEach(([L, R, n]) => { if (L && R) notes.push(`${n}は 混用の布（まぜると、おもな センモンの 苦手が 1段 上がる。上がった所は △→○ のように 出る）`); });
   return { oL, oR, mL, mR, sL, sR, tough, odry, warm, sweat, sdry, quick: !!poly, notes };
 }
@@ -4254,9 +4257,9 @@ function ySteps(ev, ch) {
       msg: W(ev.tough, '岩に こすれても、上着は びくとも しないわ。', '少し こすれたけど、だいじょうぶ。', ev.oL ? '上着が 岩に こすれて、すりきれそう……' : '上着が ないわ……'), hint: '外側の「じょうぶさ」を見よう' },
     { id: 'snow', short: '雪', name: '峠の上　雪が ふる', see: '外側の「乾きやすい」', ok: ev.odry >= 2,
       msg: W(ev.odry, '雪が とけても、上着は すぐ 乾いたわ。', '少し ぬれたけど、だんだん 乾いてきたわ。', ev.oL ? '上着が ぬれて、つめたくて 重い……' : '上着が ないわ……'), hint: '外側の「乾きやすい」を見よう' },
-    { id: 'chill', short: '峠の風', name: '峠の上　つめたい 風', see: '肌側の「乾きやすい」', ok: ev.sdry >= 2 || ev.quick,
-      msg: ev.quick || ev.sdry >= 3 ? '汗が すぐ 乾いて、風が 吹いても ひえないわ。' : ev.sdry === 2 ? '汗が 乾いてきて、ひえずに すんだわ。' : ev.sL ? '汗が 乾かなくて、風で ひえてきた……' : '肌着が ないわ……',
-      hint: '肌側の「乾きやすい」を見よう（まぜた布は、苦手が 1段 上がる）' },
+    { id: 'chill', short: '峠の風', name: '峠の上　つめたい 風', see: '肌側の「乾きやすい」◎', ok: ev.sdry >= 3 || ev.quick,
+      msg: ev.quick || ev.sdry >= 3 ? '汗が すぐ 乾いて、風が 吹いても ひえないわ。' : ev.sdry === 2 ? '汗が なかなか 乾かなくて、風で 少し ひえてきた……' : ev.sL ? '汗が 乾かなくて、風で ひえてきた……' : '肌着が ないわ……',
+      hint: '肌側の「乾きやすい」を見よう。峠の 風は つめたいので ◎が ほしい（タグの 65%に どの 繊維を 置くかで かわる）' },
     { id: 'wait', short: '夕方', name: '夕方　村の 入口で まつ', see: 'まん中の「あたたかさ」', ok: ev.warm >= 3,
       msg: ev.warm >= 3 ? 'じっと まっていても、ぽかぽか あたたかいわ。' : ev.warm === 2 ? '少し 冷えてきた……。もう 少し あたたかいと いいのだけど。' : ev.mL ? '体が 冷えて、ふるえて きたわ……' : 'セーターが ないわ……',
       hint: 'まん中の「あたたかさ」を見よう。じっと まつ ときは、とくに あたたかさが 大事' },
@@ -4320,7 +4323,7 @@ function yFormSheet() {
   const o = { layers: [
       { k: 'out', what: '上着（雪や 岩に あたる）', see: [0, 3], res: { 0: ev.tough, 3: ev.odry } },
       { k: 'mid', what: 'セーター（まん中に 着る）', see: [4], res: { 4: ev.warm } },
-      { k: 'skin', what: '肌着（肌に ふれる）', see: [2, 3], res: { 2: ev.sweat, 3: ev.sdry } }],
+      { k: 'skin', what: '肌着（肌に ふれる）', see: [2, 3], need: { 3: 3 }, res: { 2: ev.sweat, 3: ev.sdry } }],
     get: (k, i) => S.yform[k][i], set: (k, i, n) => { S.yform[k][i] = n; }, hand: [0, 2, 3, 4] };
   const need = () => [!ready && '肌側・まん中・外側に おもな センモンを 置く', y.reason == null && '理由を 1つ えらぶ'].filter(Boolean);
   const memo = [YQ.memo0, ...(y.checked ? ['セーターは 毛 100%。もみ洗いで 縮んだ'] : []), ...Y_ASKS.filter((x) => y.found.includes(x.id)).map((x) => x.memo + (y.asked.includes(x.id) ? '' : '（旅で わかった）'))];
@@ -4432,8 +4435,8 @@ function mEval() {
   const st = (L, R, k) => (L ? mixStat(L.fib, R && R.fib, k) : 0);
   const owarm = st(oL, oR, 4), wrinkle = st(oL, oR, 1);
   let sweat = st(sL, sR, 2); if (sL && sL.fib === '綿') { sweat = up(sweat); notes.push(`${sL.name}（綿）の わざ【汗とり】：肌側の おもな センモンに 置くと、汗を吸う が もう1段`); }
-  const sdry = st(sL, sR, 3), poly = [sL, sR].find((x) => x && x.fib === 'ポリエステル'), asa = [sL, sR].find((x) => x && x.fib === '麻');
-  if (poly) notes.push(`${poly.name}（ポリエステル）の わざ【速乾】：旅の時間で 重くならない`);
+  const sdry = st(sL, sR, 3), poly = sL && sL.fib === 'ポリエステル' ? sL : null, asa = [sL, sR].find((x) => x && x.fib === '麻');
+  if (poly) notes.push(`${poly.name}（ポリエステル）のわざ【速乾】：肌側の 多いほう（65%）に 置くと、旅の時間で 重くならない`); else if (sR && sR.fib === 'ポリエステル') notes.push('ポリエステルが 35%なので、わざ【速乾】は 出ない（多いほうに 置くと 出る）');
   if (asa) notes.push(`${asa.name}（麻）の わざ【さらり】：暑い場所の肌側で、困る声を 1つ 消す`);
   const hikari = !!(oL && oL.fib === '絹'); if (hikari) notes.push(`${oL.name}（絹）の わざ【ひかり】：祭りで、ゆかたの 光沢が 映える（ただし 絹は こすれに 弱い）`);
   [[oL, oR, '外側'], [sL, sR, '肌側']].forEach(([L, R, n]) => { if (L && R) notes.push(`${n}は 混用の布（まぜると、おもな センモンの 苦手が 1段 上がる。上がった所は △→○ のように 出る）`); });
@@ -4441,7 +4444,7 @@ function mEval() {
 }
 // 旅：4つの場面（★に効く）と、1つの出来事（ヒナタの 行動を 選ぶ）、さいごに 帰り道
 function mSteps(ev, ch) {
-  const W = (x, m3, m2, m1) => (x >= 3 ? m3 : x === 2 ? m2 : m1), fan = ch.fan === 1, byWear = fan && ev.sweat < 2;
+  const W = (x, m3, m2, m1) => (x >= 3 ? m3 : x === 2 ? m2 : m1), fan = ch.fan === 1, byWear = fan && ev.sweat < 3;
   const sc = [
     { id: 'hot', short: 'したく', name: '夕方　ゆかたを 着て 出かける（まだ 暑い）', see: '外側の「あたたかさ」（夏なので、高すぎないか）', ok: !!ev.oL && ev.owarm <= 2,
       msg: !ev.oL ? 'ゆかたが ないよ……' : ev.owarm <= 2 ? `右前で 着られた！ 夕方でも、ゆかたが すずしいよ。${ev.hikari ? '光沢も あって、祭りらしい！' : ''}` : '右前で 着られたけど、ゆかたが 暑くて、もう 汗が 出てきた……',
@@ -4451,9 +4454,9 @@ function mSteps(ev, ch) {
       hint: '外側の「しわに強い」を見よう' },
     { ev: 'fan', short: 'おどり', name: '出来事　盆おどりの 輪で', q: 'やぐらの まわりで、盆おどりが 始まった。おどっていると、汗が どんどん 出てきた！　ヒナタは どうする？',
       opts: ['そのまま おどりつづける', 'ときどき 輪を ぬけて、うちわで あおぐ'], res: (c) => (c === 1 ? 'ときどき 輪を ぬけて、うちわで あおいだよ。風が 気持ちいい！' : 'そのまま、さいごまで おどりつづけたよ！') },
-    { id: 'odori', short: '汗', name: '盆おどり　汗びっしょり', see: '肌側の「汗を吸う」', ok: ev.sweat >= 2 || fan, byWear,
-      msg: ev.sweat >= 3 ? '汗を すって、肌着が さらっと しているよ。' : ev.sweat === 2 ? '少し べたつくけど、だいじょうぶ。' : byWear ? 'うちわで あおいだから、汗は そんなに かかずに すんだよ。' : ev.sL ? '汗で、肌着が べたべた……' : '肌着が ないよ……',
-      hint: '肌側の「汗を吸う」を見よう。とちゅうの 行動でも かわるかも' },
+    { id: 'odori', short: '汗', name: '盆おどり　汗びっしょり', see: '肌側の「汗を吸う」◎', ok: ev.sweat >= 3 || fan, byWear,
+      msg: ev.sweat >= 3 ? '汗を すって、肌着が さらっと しているよ。' : byWear ? 'うちわで あおいだから、汗は そんなに かかずに すんだよ。' : ev.sL ? '汗で、肌着が べたべた……' : '肌着が ないよ……',
+      hint: '肌側の「汗を吸う」を見よう。盆おどりで 汗びっしょりに なるので ◎が ほしい（とちゅうの 行動でも かわるかも）' },
     { id: 'hanabi', short: '花火', name: '夜　川原で 花火（川の 風）', see: '肌側の「乾きやすい」', ok: ev.sdry >= 2 || ev.quick,
       msg: ev.quick || ev.sdry >= 3 ? '汗が すぐ 乾いて、川の 風が 気持ちいい！ 花火、きれいだね。' : ev.sdry === 2 ? '汗が 乾いてきて、ひえずに 花火を 見られたよ。' : ev.sL ? '汗が 乾かなくて、川の 風で ひえてきた……' : '肌着が ないよ……',
       hint: '肌側の「乾きやすい」を見よう（まぜた布は、苦手が 1段 上がる）' },
@@ -4532,7 +4535,7 @@ function mFormSheet() {
   const o = { layers: [
       { k: 'out', what: 'ゆかた（人から 見える）', see: [1, 4], res: { 1: ev.wrinkle, 4: ev.owarm } },
       { k: 'mid', what: 'セーターなど', lock: 'この依頼では 使わない' },
-      { k: 'skin', what: '肌着（ゆかたの 下に 着る）', see: [2, 3], res: { 2: ev.sweat, 3: ev.sdry } }],
+      { k: 'skin', what: '肌着（ゆかたの 下に 着る）', see: [2, 3], need: { 2: 3 }, res: { 2: ev.sweat, 3: ev.sdry } }],
     get: (k, i) => S.mform[k][i], set: (k, i, n) => { S.mform[k][i] = n; }, hand: [1, 2, 3, 4], yukata: 'R' };
   const need = () => [!ready && '外側と肌側に おもな センモンを 置く', m.reason == null && '理由を 1つ えらぶ'].filter(Boolean);
   const memo = [MQ.memo0, 'ゆかたは 右前（右の 身ごろが 先・左が 上）', ...M_ASKS.filter((x) => m.found.includes(x.id)).map((x) => x.memo + (m.asked.includes(x.id) ? '' : '（旅で わかった）'))];
