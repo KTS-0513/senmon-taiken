@@ -287,6 +287,8 @@ body.cine .panel, body.cine #prompt { opacity:0; pointer-events:none; }
 .ctools .material-symbols-outlined { font-size:17px; }
 .items .it.wide { grid-column:1 / -1; }   /* 箱の 表示が ある 持ち物は 1行ぶん */
 .dbox { display:block; width:max-content; max-width:100%; margin-top:4px; padding:4px 8px; background:#fff; border:1px solid rgba(46,58,89,.45); border-radius:4px; font-size:13px; line-height:1.55; }   /* 持ち物：洗剤の 箱の 表示 */
+.ckopts { display:flex; flex-wrap:wrap; gap:6px; }
+.ckopts button.on { outline:2px solid var(--akane); outline-offset:-2px; background:#fbecc4; }
 .need3 { color:var(--akane); font-weight:700; }   /* 依頼ごとに ◎を 求める 性質（2026-10-26） */
 .cnote { min-height:1.6em; margin:5px 0 0; font-size:13px; color:var(--akane); }
 .cex { margin-top:4px; padding-top:4px; border-top:1px dashed rgba(46,58,89,.3); font-size:12px; }
@@ -3682,13 +3684,13 @@ function jo3() {
   };
   draw();
 }
-// 場面4 入門試験：はじめに ゲームを 止めて、教室で 体操服・制服の タグを 読む
+// 場面4 入門試験：体操服の タグの 繊維を 予想して 手帳に のこし、先へ（タグは ゲームの あと 教室で 読む。2026-10-27 本人決定）
 function jo4() {
-  openSheet(`<h2>入門試験 ── タグを読む</h2>${say('ツムギ', '入門試験だよ。……と、その前に。')}${say('ツムギ', 'きみの 世界にも、服が あるだろう？ その服の タグを、先に 読んでおいで。')}
-    <div class="pause"><div class="pt"><span class="material-symbols-outlined" aria-hidden="true">pause_circle</span>ここで ゲームを 止めて、教室で たしかめよう</div>
-    <ul><li>体操服・制服の えりや 脇の タグを、となり同士で 読む（自分の服は ぬがない。見える所だけ）</li><li>綿・毛・ポリエステルの 布に さわる（手ざわり・のび・重さ）</li><li>ワークシートに、タグに 書いてあったことを 全部 書き写す</li></ul></div>
-    <div class="row"><button id="bClose">あとで</button><button class="main" id="bBack">たしかめた！ ゲームに もどる</button></div>`);
-  $('#bBack').onclick = () => { S.story.jo = 'exam2'; jo4exam(); }; $('#bClose').onclick = closeSheet; $('#bBack').focus();
+  openSheet(`<h2>入門試験 ── タグを読む</h2>${say('ツムギ', '入門試験だよ。……と、その前に。')}${say('ツムギ', 'きみの 世界にも、服が あるだろう？ その服の タグは、あとで 教室で 読んでごらん。まずは 予想だ。')}
+    ${predictHtml('tag')}
+    <div class="row"><button id="bClose">あとで</button><button class="main" id="bBack"${ckOf('tag') ? '' : ' disabled'}>予想を 手帳に 書いて、入門試験へ</button></div>`);
+  bindPredict('tag', jo4);
+  $('#bBack').onclick = () => { S.story.jo = 'exam2'; jo4exam(); }; $('#bClose').onclick = closeSheet; (ckOf('tag') ? $('#bBack') : $('#sheet [data-ck]')).focus();
 }
 const EXAM = [
   { n: '白い Tシャツ', tag: '綿 100%', a: 'plant', col: '#9a9a92' },
@@ -3700,7 +3702,7 @@ function jo4exam() {
   const pick = S.story.exam || (S.story.exam = {}), shown = S.story.examChk;
   const all = EXAM.every((_, i) => pick[i]);
   const hint = S.story.examHint ? `<div class="hintbox"><b>${AIBO_NM[S.aibo]}</b>「${gl(ai({ meja: 'シュルルッ！ 手帳の いちばん左の列を、上から順に はかってみよう。「綿」は 何行め？', pinko: 'チクッ！ 手帳の「綿」の行に ピンを さしたよ！ その行の いちばん左を 見て！', iro: 'シュー……。だいじょうぶ。手帳の 左はしに「植物」「動物」って 書いてあるよ。あわてず、ゆっくり 見てね。' }).t)}」</div>` : '';
-  openSheet(`<h2>入門試験 ── タグを読む</h2>${say('ツムギ', 'おかえり。では 入門試験だよ。服の タグを 読んで、その 繊維の ふるさとを 当ててごらん。')}${say('ツムギ', 'さっき 読んだ タグと、同じように 読めば いいよ。')}
+  openSheet(`<h2>入門試験 ── タグを読む</h2>${say('ツムギ', 'では 入門試験だよ。服の タグを 読んで、その 繊維の ふるさとを 当ててごらん。')}${say('ツムギ', 'タグには、繊維の 名前と ％が 書いてある。わからなければ、相棒に 聞いてごらん。')}
     <p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>3着の タグを 読んで、それぞれの ふるさとを えらぼう（教科書の 表1を 見てよい）</span></p>
     <div class="exam">${EXAM.map((x, i) => `<div class="erow"><div class="who"><span class="material-symbols-outlined" aria-hidden="true" style="color:${x.col}">apparel</span><span>${x.n}<br><span class="ctag">${x.tag}</span></span></div>
       <div class="opts">${HOME3.map(([k, ic, n]) => `<button data-i="${i}" data-k="${k}" class="${pick[i] === k ? 'pick' : ''}"><span class="material-symbols-outlined" aria-hidden="true">${ic}</span>${n}</button>`).join('')}${shown && pick[i] && pick[i] !== x.a ? '<span class="chip ng">まだ</span>' : ''}</div></div>`).join('')}</div>
@@ -3831,14 +3833,33 @@ const CH_LEARN = [
   ['キットの 説明の ことばを、繊維の 性質（表1）や 布の つくりで 読める', '作る 物に 合う 材料と 縫い方を 選び、作りやすい 形に デザインを 決め直す', '持ち歩く 暮らし（マイボトル）で、買う ペットボトルの 本数を 考える'],
   ['着なくなった 服は、ゆずる・直す・作りかえるで もう一度 使える（再利用）', '使えない 服や ペットボトルは、回収して 資源に もどし、新しい 物に（リサイクル）', '布の 端切れも、むだなく 使える'],
 ];
+/* あとで 教室で たしかめる こと（本人決定 2026-10-27：ゲームは 止めずに 章の おわりまで 進め、そのあと 全員で 実物や 動画で たしかめて、
+   ワークシートに まとめる。ゆかたは 実物が ないので アプリと 動画で）。予想は S.reflect.ck に のこす（きろくと いっしょに 送られる） */
+const CHECKS = [
+  { k: 'tag', ch: 0, t: '体操服・制服の タグを 読む（となり同士で。自分の 服は ぬがない。見える 所だけ）。綿・毛・ポリエステルの 布に さわる', q: '体操服の タグには、何の 繊維が 書いてあると 思う？', opts: ['綿', 'ポリエステル', '綿と ポリエステル（混用）', 'ほかの 繊維'] },
+  { k: 'nuno', ch: 2, t: '布を 引っぱる・切り口を 見る（織物・編物・不織布）。キットの フリースと フェルトも さわって くらべる', q: '引っぱって、いちばん よく のびる 布は？', opts: ['織物', '編物', '不織布'] },
+  { k: 'yukata', ch: 3, t: 'ゆかたの 着方の 動画を 見て、衿の 重なり（右前）を たしかめる（先生が 見せる）' },
+];
+const ckOf = (k) => (S.reflect.ck || {})[k];
+function checkHtml(c) {   // 章の おわり・手帳の「章」：このあと 教室で たしかめる ことと、自分の 予想
+  const L = CHECKS.filter((x) => x.ch === c); if (!L.length) return '';
+  return `<div class="real" style="margin-top:8px"><b><span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px;vertical-align:-4px">pan_tool</span> このあと 教室で たしかめる こと</b>（${CH[c].name}）<ul>${L.map((x) => `<li>${gl(x.t)}${x.q ? `<br><small>${x.q}　自分の 予想：<b>${ckOf(x.k) ? esc(ckOf(x.k)) : '（まだ）'}</b></small>` : ''}</li>`).join('')}</ul><p class="sub" style="margin:4px 0 0">たしかめた ことは、ワークシートに まとめよう</p></div>`;
+}
+function predictHtml(k) {   // ゲームは 止めずに、予想を 1つ えらんで 手帳に のこす
+  const x = CHECKS.find((y) => y.k === k), v = ckOf(k);
+  return `<div class="real"><b><span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px;vertical-align:-4px">edit_note</span> あとで 教室で たしかめよう</b>（いまは ゲームを つづける）<p style="margin:4px 0">${gl(x.t)}</p>
+    <p style="margin:6px 0 4px"><b>予想</b>：${x.q}</p><div class="ckopts">${x.opts.map((o) => `<button data-ck="${o}" aria-pressed="${v === o}" class="${v === o ? 'on' : ''}">${o}</button>`).join('')}</div></div>`;
+}
+function bindPredict(k, after) { $('#sheet').querySelectorAll('[data-ck]').forEach((b) => (b.onclick = () => { (S.reflect.ck = S.reflect.ck || {})[k] = b.dataset.ck; saveGame(); after(); })); }
 function endChapter(c) {
   if (!S.ch.done.includes(c)) S.ch.done.push(c);
   const nx = curCh(), nextName = CH[c + 1] ? `${CH[c + 1].name}「${CH[c + 1].title}」` : '';
-  const learn = (CH_LEARN[c] || []).concat(c === 3 && S.m.kitsuke ? ['和服（ゆかた）は 右前に 着る。着る人の 右の 身ごろを 先に 合わせ、左の 身ごろを 上に 重ねる'] : []);   // 夏祭りの村の 依頼で 着方を たしかめた 人だけ
+  const learn = (CH_LEARN[c] || []).concat(c === 3 && S.m.kitsuke ? ['和服（ゆかた）は 右前に 着る。着る人の 右の 身ごろを 先に 合わせ、左の 身ごろを 上に 重ねる'] : []);   // ギルドで 合わせ方を たしかめるので 全員（2026-10-26）
   renderQuest(); saveGame();
   openSheet(`<h2>${CH[c].name}「${CH[c].title}」　おわり</h2><div class="endcard"><p class="big">${CH[c].name} おわり</p>
     ${learn.length ? `<ul>${learn.map((x) => `<li>${gl(x)}</li>`).join('')}</ul>` : ''}<p class="sub" style="margin:6px 0 2px">ギルドの印</p>${marksHtml(true)}
     <p class="next">${nx != null ? `次は ${CH[nx].name}「${CH[nx].title}」。右上の「いま」を 見て 進もう` : `次は ${nextName}。先生が 章を ひらくまで、大陸を 歩いて みよう${S.mine ? '（センモンに 話しかけると、なかまに できる）' : ''}`}</p></div>
+    ${checkHtml(c)}
     ${TAIKEN ? `<p class="tkEnd">体験の おわり。ほかの 章も えらべます${c < 7 ? '（このまま 次の 章へ 進むことも できます）' : ''}</p>` : ''}
     <div class="row">${TAIKEN ? '<button id="bTk">章選びへ</button>' : ''}<button id="bNote">手帳を 見る</button><button class="main" id="bClose">${TAIKEN ? 'つづけて 遊ぶ' : 'とじる'}</button></div>`);
   $('#bNote').onclick = () => openNote(); $('#bClose').onclick = () => { closeSheet(); checkChapterIntro(); }; $('#bClose').focus();
@@ -3956,7 +3977,8 @@ function openNote(tab = 'nazo') {
   } else {
     const c = curCh();
     body = `<table class="tb"><tr><th>章</th><th>授業</th><th>ようす</th></tr>${CH.map((x, i) => `<tr${i === c ? ' style="background:#fbecc4"' : ''}><td>${x.name}「${x.title}」</td><td>${x.when}</td><td>${S.ch.done.includes(i) ? 'おわった' : i === c ? '<b style="color:var(--akane)">いま</b>' : i <= S.ch.open ? (READY_CH.includes(i) ? 'ひらいた' : '準備中（見本）') : 'まだ ひらいていない'}</td></tr>`).join('')}</table>
-      <p class="sub" style="margin-top:6px">章は、先生が 授業で ひらく。ギルドの印 ${S.buttons.length}/6　${marksHtml()}</p>${TEACH_UI() ? '<p><button id="bTeach">先生用</button></p>' : ''}`;
+      <p class="sub" style="margin-top:6px">章は、先生が 授業で ひらく。ギルドの印 ${S.buttons.length}/6　${marksHtml()}</p>${TEACH_UI() ? '<p><button id="bTeach">先生用</button></p>' : ''}
+      ${[...new Set(CHECKS.map((x) => x.ch))].filter((i) => S.ch.done.includes(i) || i === c).map(checkHtml).join('')}`;
   }
   openSheet(`<h2>ギルドの手帳</h2><div class="tabs">${T.map(([k, n]) => `<button data-t="${k}" class="${k === tab ? 'on' : ''}">${n}</button>`).join('')}</div>${body}<div class="row"><button class="main" id="bClose">とじる</button></div>`);
   $('#sheet').querySelectorAll('[data-t]').forEach((b) => (b.onclick = () => openNote(b.dataset.t)));
@@ -4101,7 +4123,7 @@ function towerF1() {
 }
 function towerF2() {
   const t = T1(), m = myS(), solved = C1_REQ.filter((q, i) => t.r[i] === q.ans).length;
-  const real = `<div class="real"><b><span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px;vertical-align:-4px">pan_tool</span> 教室の 布で たしかめよう</b>（ゲームを いったん とめて）
+  const real = checkHtml(2) || `<div class="real"><b><span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px;vertical-align:-4px">pan_tool</span> 教室の 布で たしかめよう</b>（ゲームを いったん とめて）
     <ul><li>引っぱる：どの 布が よく のびる？</li><li>切り口を 見る・ほどく：糸が ほどけて 出てくる？</li><li>キットの フリースと フェルトも、さわって くらべよう</li></ul><p class="sub" style="margin:4px 0 0">わかったことは、ワークシートに 書こう</p></div>`;
   openSheet(`<h2>2階　布の階</h2><p class="sub">糸を 布に する。布の つくりは 3つ</p>
     <div class="cloths">${Object.keys(CLOTH).map((k) => { const v = (t.view || {})[k];
@@ -4109,15 +4131,15 @@ function towerF2() {
       return `<div class="cloth"><b>${gl(CLOTH[k].n)}</b><span class="lupe"><span class="material-symbols-outlined" aria-hidden="true">zoom_in</span>拡大</span><div class="sws">${sws}</div><div class="cd">${CLOTH[k].d}</div>
         ${t.real ? `<div class="ctools"><button data-v="${k}:pull" class="${v === 'pull' ? 'on' : ''}"><span class="material-symbols-outlined" aria-hidden="true">arrow_range</span>引っぱる</button><button data-v="${k}:cut" class="${v === 'cut' ? 'on' : ''}"><span class="material-symbols-outlined" aria-hidden="true">content_cut</span>切り口</button></div><p class="cnote">${v ? CLOTH_NOTE[v][k] : ''}</p>` : ''}
         ${solved === 3 ? `<div class="cex">${CLOTH[k].ex}</div>` : ''}</div>`; }).join('')}</div>
-    ${t.real ? '<p class="sub" style="text-align:center;margin:-4px 0 8px">教室の 布で たしかめた ことを、ゲームでも「引っぱる」「切り口」で 見て くらべよう</p>' : ''}
-    ${!t.real ? `${real}<div class="row"><button id="bBack">塔の 入口へ</button><button class="main" id="bReal">たしかめた（依頼へ）</button></div>`
+    ${t.real ? `<p class="sub" style="text-align:center;margin:-4px 0 8px">「引っぱる」「切り口」で 見て、自分の 予想（${esc(ckOf('nuno') || '—')}）と くらべよう。あとで 教室の 布でも たしかめる</p>` : ''}
+    ${!t.real ? `${predictHtml('nuno')}<div class="row"><button id="bBack">塔の 入口へ</button></div>`
     : `<p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>依頼に 合う 布の つくりを えらんで、${esc(m.name)}を 進化させよう（${solved}/3）</span></p>
       <div class="reqs">${C1_REQ.map((q, i) => { const pk = t.r[i], ok = pk === q.ans; return `<div class="req${ok ? ' ok' : ''}"><b>依頼${i + 1}</b>　${gl(q.t)}
         ${ok ? '' : `<div class="opts">${Object.keys(CLOTH).map((k) => `<button data-q="${i}" data-k="${k}"${pk === k ? ' class="pick"' : ''}>${CLOTH[k].n}</button>`).join('')}</div>`}
         ${pk ? `<div class="hint">${ok ? `<span class="chip ok">ねがいに合っている</span>　${esc(m.name)}が ${CLOTH[pk].n}に 進化した！` : `<span class="chip ng">まだ</span>　手がかり：${gl(q.hint)}`}</div>` : ''}</div>`; }).join('')}</div>
-      <div class="row"><button id="bBack">塔の 入口へ</button><button id="bReal2">教室の 布の 案内</button>${solved === 3 ? '<button class="main" id="bNext">3階へ のぼる</button>' : ''}</div>`}`, true);
+      <div class="row"><button id="bBack">塔の 入口へ</button><button id="bReal2">教室で たしかめる こと</button>${solved === 3 ? '<button class="main" id="bNext">3階へ のぼる</button>' : ''}</div>`}`, true);
   $('#bBack').onclick = openTower;
-  if ($('#bReal')) { $('#bReal').onclick = () => { t.real = true; saveGame(); towerF2(); }; $('#bReal').focus(); }
+  if (!t.real) bindPredict('nuno', () => { t.real = true; saveGame(); towerF2(); });   // 予想を えらぶと 依頼と 道具が 出る（2026-10-27）
   if ($('#bReal2')) $('#bReal2').onclick = () => { openSheet(`<h2>2階　布の階</h2>${real}<div class="row"><button class="main" id="bBack">もどる</button></div>`, true); $('#bBack').onclick = towerF2; };
   $('#sheet').querySelectorAll('[data-q]').forEach((b) => (b.onclick = () => { t.r[+b.dataset.q] = b.dataset.k; saveGame(); towerF2(); }));
   $('#sheet').querySelectorAll('[data-v]').forEach((b) => (b.onclick = () => {   // 引っぱる・切り口（もう一度 おすと もとに もどる）。のびる 動きが 見えるように、いったん もとの 形で 描いてから 変える
@@ -4527,7 +4549,7 @@ function kitsukeGuildDone(pic) {   // ギルド版の あと：教室で 実物�
   openSheet(`<h2>右前で 着られた！</h2><p class="sub">${gl('右前：着る人の 右の 身ごろを 先に 体に 合わせ、左の 身ごろを 上に 重ねる。前から 見ると、衿が「y」の字に 見える')}</p>
     <div class="kitsuke"><div class="ktorso">${pic('R')}<p class="tcap">前から 見ると、衿が「y」の字</p></div>
     <div class="kopts">${say('ツムギ', 'そう、右前。わたしの 衿も 同じ 形だろう？ 反対の 左前は、ふだんは 着ない 決まりなんだ。')}
-      <div class="class-talk"><span class="material-symbols-outlined" aria-hidden="true">groups</span><span>教室で：ゆかたの 実物で、衿の 重なり（右前）を 見よう。<b>先生の 合図を 待つ</b></span></div>
+      <div class="class-talk"><span class="material-symbols-outlined" aria-hidden="true">groups</span><span>あとで 教室で：ゆかたの 着方の 動画を 見て、衿の 重なり（右前）を たしかめよう（先生が 見せる）</span></div>
       ${lnHtml(ai({ meja: 'シュルルッ……ヒナタにも 手紙で 教えてあげよう。さあ、町の依頼を 1つ えらぼう！', pinko: 'チクッ！ ヒナタにも 教えてあげよう！ さあ、町の依頼を えらぼう！', iro: 'シュー……ヒナタにも 教えてあげよう。さあ、町の依頼を 1つ えらぼう。' }))}</div></div>
     <div class="row"><button class="main" id="bPick">${c2Any() ? 'ツムギに 報告する' : '町の依頼を えらぶ'}</button></div>`, true);
   $('#bPick').onclick = openTsumugiC2; $('#bPick').focus();
@@ -4832,7 +4854,7 @@ function c3Suiri(sel = {}) {
   const clues = S.nazo.filter((x) => x.f && SUIRI_OK[x.f]);
   const cl = clues[sel.c], fb = sel.fb;
   openSheet(`<h2>推理の 時間</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">search</span><span>手帳の 記録から「おかしい」と 思う ものを 1つ、表1の どの 欄で そう 思ったかを 1つ えらぼう。<b>当てるのが 目的では ない。</b>理由（表1の 欄）を 言えたら、物語が 先へ 進む</span></p>
-    <div class="class-talk"><span class="material-symbols-outlined" aria-hidden="true">groups</span><span>クラスで：ここで 手を とめて、だれが あやしいか・どこが おかしいかを 出し合おう。<b>根拠は 表1の 欄で</b> 言う</span></div>
+    <div class="class-talk"><span class="material-symbols-outlined" aria-hidden="true">groups</span><span>あとで クラスで：だれが あやしいか・どこが おかしいかを 出し合おう。<b>根拠は 表1の 欄で</b> 言う</span></div>
     <div class="suiri" style="margin-top:10px"><div class="col clues"><b>① 手帳の 記録（${clues.length}）</b>${clues.map((x, i) => `<label><input type="radio" name="sc" value="${i}"${sel.c === i ? ' checked' : ''}> <span>${gl(x.t)}</span></label>`).join('')}</div>
       <div class="col"><b>② 表1の どの 欄で？</b>${T1_COLS.map((c) => `<label><input type="radio" name="sk" value="${c}"${sel.k === c ? ' checked' : ''}> <span>${gl(c)}</span></label>`).join('')}
         ${fb ? `<div class="wres ${fb.ok ? 'ok' : 'ng'}" style="margin-top:4px"><span class="material-symbols-outlined" aria-hidden="true">${fb.ok ? 'lightbulb' : 'help'}</span><span>${fb.t}</span></div>` : ''}
