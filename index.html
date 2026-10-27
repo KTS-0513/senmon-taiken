@@ -3890,6 +3890,8 @@ const CHECKS = [
   { k: 'tag', ch: 0, t: '体操服・制服の タグを 読む（となり同士で。自分の 服は ぬがない。見える 所だけ）。綿・毛・ポリエステルの 布に さわる', q: '体操服の タグには、何の 繊維が 書いてあると 思う？', opts: ['綿', 'ポリエステル', '綿と ポリエステル（混用）', 'ほかの 繊維'] },
   { k: 'nuno', ch: 2, t: '布を 引っぱる・切り口を 見る（織物・編物・不織布）。キットの フリースと フェルトも さわって くらべる', q: '引っぱって、いちばん よく のびる 布は？', opts: ['織物', '編物', '不織布'] },
   { k: 'yukata', ch: 3, t: 'ゆかたの 着方の 動画を 見て、衿の 重なり（右前）を たしかめる（先生が 見せる）' },
+  { k: 'bubun', ch: 4, t: '先生が 用意した 汚れ布で、部分洗いを する・しないを 比べる（班で 分けて、あとで 持ち寄る）', q: '油の よごれは、部分洗いを しないで ふつうに 洗うだけで 落ちる？', opts: ['落ちる', '少し のこる', 'ほとんど のこる'] },
+  { k: 'ryou', ch: 4, t: '洗剤を めやすどおり・めやすの 2倍で 比べる（班で 分けて、あとで 持ち寄る）', q: '洗剤を めやすの 2倍に すると、よごれは？', opts: ['もっと よく 落ちる', 'あまり 変わらない', '落ちにくく なる'] },
 ];
 const ckOf = (k) => (S.reflect.ck || {})[k];
 function checkHtml(c) {   // 章の おわり・手帳の「章」：このあと 教室で たしかめる ことと、自分の 予想
@@ -3899,9 +3901,9 @@ function checkHtml(c) {   // 章の おわり・手帳の「章」：このあ�
 function predictHtml(k) {   // ゲームは 止めずに、予想を 1つ えらんで 手帳に のこす
   const x = CHECKS.find((y) => y.k === k), v = ckOf(k);
   return `<div class="real"><b><span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px;vertical-align:-4px">edit_note</span> あとで 教室で たしかめよう</b>（いまは ゲームを つづける）<p style="margin:4px 0">${gl(x.t)}</p>
-    <p style="margin:6px 0 4px"><b>予想</b>：${x.q}</p><div class="ckopts">${x.opts.map((o) => `<button data-ck="${o}" aria-pressed="${v === o}" class="${v === o ? 'on' : ''}">${o}</button>`).join('')}</div></div>`;
+    <p style="margin:6px 0 4px"><b>予想</b>：${x.q}</p><div class="ckopts">${x.opts.map((o) => `<button data-ck="${o}" data-ckk="${k}" aria-pressed="${v === o}" class="${v === o ? 'on' : ''}">${o}</button>`).join('')}</div></div>`;
 }
-function bindPredict(k, after) { $('#sheet').querySelectorAll('[data-ck]').forEach((b) => (b.onclick = () => { (S.reflect.ck = S.reflect.ck || {})[k] = b.dataset.ck; saveGame(); after(); })); }
+function bindPredict(k, after) { $('#sheet').querySelectorAll(`[data-ckk="${k}"]`).forEach((b) => (b.onclick = () => { (S.reflect.ck = S.reflect.ck || {})[k] = b.dataset.ck; saveGame(); after(); })); }
 function endChapter(c) {
   if (!S.ch.done.includes(c)) S.ch.done.push(c);
   const nx = curCh(), nextName = CH[c + 1] ? `${CH[c + 1].name}「${CH[c + 1].title}」` : '';
@@ -4876,6 +4878,7 @@ function c3Arai() {
       ai({ meja: 'シュルルッ……また「おもいだして」。それより、まずは 服を 洗おう！ タグを 読んで、手帳の 表1で たしかめよう。', pinko: 'チクッ！ また「おもいだして」！ でも まずは 洗おう！ タグと 表1に ピン！', iro: 'シュー……。また「おもいだして」……。まずは、服を 洗って あげよう。タグと 表1を 見ながらね。' }),
     ], () => { addNazo('洗い場の たらいの 横に、つぎはぎの 切れはしと「おもいだして」の 紙。ヨゴレンを 呼んだのは ボロン……？', 6); c3Arai(); }, '服を 洗う', true);
   }
+  if (!S.story.w.length && !(ckOf('bubun') && ckOf('ryou'))) return c3Predict();
   const left = WASH_C3.filter((x) => !S.story.w.includes(x.id));
   const nw = S.story.w.length, enough = nw >= WASH_NEED;
   openSheet(`<h2>ギルドの洗い場</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>${!enough ? `洗う 服を えらぼう（${nw}/${WASH_NEED} すっきりで 先へ）。どれからでも よい` : left.length ? `${nw}まい すっきり！「つぎへ」で 推理へ。早く おわった 人は、のこりも 洗える` : `${WASH_C3.length}まい とも すっきり！「つぎへ」を おそう`}</span></p>
@@ -4891,6 +4894,14 @@ function c3Arai() {
   }));
   $('#bClose').onclick = closeSheet;
   if ($('#bNext')) { $('#bNext').onclick = () => c3AfterWash(); $('#bNext').focus(); } else { const f = $('#sheet [data-w]:not([disabled])'); if (f) f.focus(); }
+}
+function c3Predict() {   // 洗う 前に 予想 2つ（あとで 教室の 小さな 実験で たしかめる）
+  const ok = ckOf('bubun') && ckOf('ryou');
+  openSheet(`<h2>ギルドの洗い場</h2>${say(aiNm(), aiSnd() + '洗う 前に、予想して おこう。あとで 教室で、本物の 汚れ布で たしかめるよ。')}
+    ${predictHtml('bubun')}<div style="height:8px"></div>${predictHtml('ryou')}
+    <div class="row"><button id="bClose">あとで</button><button class="main" id="bGo"${ok ? '' : ' disabled'}>予想を 手帳に 書いて、洗い場へ</button></div>`, true);
+  bindPredict('bubun', c3Predict); bindPredict('ryou', c3Predict);
+  $('#bClose').onclick = closeSheet; $('#bGo').onclick = c3Arai; if (ok) $('#bGo').focus();
 }
 function c3AfterWash() {
   talkSeq('ギルドの洗い場', [
