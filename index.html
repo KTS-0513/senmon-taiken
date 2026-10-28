@@ -232,7 +232,7 @@ details.memo:not([open]) > summary::after { content:'expand_more'; }
 body.cine .panel, body.cine #prompt { opacity:0; pointer-events:none; }
 #cineCap { position:fixed; left:50%; bottom:28px; transform:translateX(-50%); z-index:45; display:none; width:max-content; max-width:min(640px,92vw); box-sizing:border-box; padding:12px 22px; font-size:17px; line-height:1.7; text-align:center; background:var(--kinari); color:var(--ai); border-top:2px dashed var(--akane); border-bottom:2px dashed var(--akane); }
 @media (prefers-reduced-motion:reduce) { #home.fly { animation-duration:.3s; } .quilt, .art .cl, .book .narr .more { animation:none; } }
-.homeCard { width:min(520px,92vw); max-height:92vh; overflow:auto; display:block; padding:30px 32px 24px; text-align:center; box-sizing:border-box; }
+.homeCard { width:min(520px,92vw); max-height:none; overflow:visible; margin:auto; display:block; padding:30px 32px 24px; text-align:center; box-sizing:border-box; }   /* 長い ときは 画面ごと スクロール（カードの 中で スクロールすると、茜の 縫い目の 枠が 表の 上を 横切った。本人 2026-10-28） */
 .homeCard .kick { font-size:13px; color:#5a6582; margin:0; }
 .homeCard h1 { font-family:"Yusei Magic",sans-serif; font-weight:400; font-size:40px; letter-spacing:2px; margin:4px 0 2px; color:var(--ai); }
 .homeCard .lead { font-size:14px; margin:6px 0 12px; }
@@ -289,6 +289,32 @@ body.cine .panel, body.cine #prompt { opacity:0; pointer-events:none; }
 .dbox { display:block; width:max-content; max-width:100%; margin-top:4px; padding:4px 8px; background:#fff; border:1px solid rgba(46,58,89,.45); border-radius:4px; font-size:13px; line-height:1.55; }   /* 持ち物：洗剤の 箱の 表示 */
 .ckopts { display:flex; flex-wrap:wrap; gap:6px; }
 .ckopts button.on { outline:2px solid var(--akane); outline-offset:-2px; background:#fbecc4; }
+/* 洗い場の 予想：実験の 絵と、結果の 絵で えらぶ（本人 2026-10-28「文字が 小さく、文字だけで 見づらい。図解や イラストで」） */
+.pstep { display:block; font-size:14px; color:#5a6582; margin:8px 0 4px; }
+.pstep b { color:var(--ai); font-size:16px; }
+.pfig { background:#fff; border-radius:6px; padding:6px 12px; outline:1.5px dashed rgba(46,58,89,.3); outline-offset:-3px; }
+.prow { display:grid; grid-template-columns:30px 7.6em 80px 20px minmax(0,1fr) 20px minmax(0,1fr) 20px 92px; align-items:center; gap:4px 6px; padding:5px 0; font-size:15px; }
+.prow + .prow { border-top:1px dashed rgba(46,58,89,.2); }
+.pab { display:inline-flex; width:28px; height:28px; align-items:center; justify-content:center; border-radius:4px; background:var(--ai); color:#fff; font-weight:700; }
+.prow .ar { color:#9a9280; font-size:20px; justify-self:center; }
+.pu { display:flex; flex-direction:column; align-items:center; gap:3px; text-align:center; min-width:0; }
+.pu small { font-size:13px; line-height:1.35; color:var(--ai); }
+.pu .pic { display:inline-flex; width:48px; height:48px; align-items:center; justify-content:center; background:#eef5e6; border-radius:6px; font-size:28px; color:#4f6b3a; }
+.pu svg.scloth { width:50px; height:50px; }
+.pu svg.basin { width:70px; height:48px; }
+.pu .spoons { display:flex; height:48px; align-items:center; } .pu .spoons svg { height:32px; }
+.pu.span3 { grid-column:span 3; }
+.pu.none .pline { width:100%; height:48px; display:flex; align-items:center; color:#7a8296; font-size:14px; justify-content:center; border-top:2px dashed #c9c2ae; border-bottom:2px dashed #c9c2ae; box-sizing:border-box; }
+.pq { font-size:18px; font-weight:700; margin:10px 0 6px; line-height:1.6; }
+.popts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+#sheet .popts button { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:6px; padding:10px 6px 12px; font-size:17px; background:#fff; }
+#sheet .popts button.on { outline:3px solid var(--akane); outline-offset:-3px; background:#fbecc4; }
+.popts svg.scloth { width:72px; height:72px; }
+.popts .pair { display:flex; gap:6px; align-items:flex-end; }
+.popts .pair span { display:flex; flex-direction:column; align-items:center; font-size:12px; color:#5a6582; }
+.popts .pair svg.scloth { width:60px; height:60px; }
+.pnote { display:flex; align-items:center; gap:6px; font-size:14px; color:#4f6b3a; margin:10px 0 0; }
+@media (max-width:640px) { .popts { grid-template-columns:1fr; } .prow { display:flex; flex-wrap:wrap; } }
 button:focus-visible, [role=button]:focus-visible, .term:focus-visible { outline:3px solid var(--akane) !important; outline-offset:2px; }   /* キーボードで 動かす 子に、いまの 場所が 見えるように（クロスレビュー 2026-10-27） */
 .need3 { color:var(--akane); font-weight:700; }   /* 依頼ごとに ◎を 求める 性質（2026-10-26） */
 .cnote { min-height:1.6em; margin:5px 0 0; font-size:13px; color:var(--akane); }
@@ -492,6 +518,10 @@ table.mix td.up { background:#fbecc4; font-weight:700; color:var(--akane); }
 .clist .cgrid div { display:flex; gap:8px; align-items:center; font-size:13px; line-height:1.4; }
 .wstain { background:#fffdf6; border:1.5px dashed rgba(176,138,46,.7); border-radius:6px; padding:8px 10px; font-size:13px; display:flex; gap:8px; align-items:center; }
 .wstain .material-symbols-outlined { font-size:30px; color:#b08a2e; }
+.wstain .ygimg { width:60px; height:60px; flex:none; border-radius:6px; background:#f3ead2; }
+.ygchg { display:flex; align-items:center; justify-content:center; gap:10px; }
+.ygchg img { width:110px; height:110px; border-radius:8px; background:#f3ead2; }
+.ygchg .material-symbols-outlined { font-size:34px; color:var(--akane); }
 .wrows { display:flex; flex-direction:column; gap:6px; }
 .wrow { display:grid; grid-template-columns:150px minmax(0,1fr); gap:8px; align-items:center; background:#fff; border:1.5px dashed rgba(46,58,89,.3); border-radius:6px; padding:6px 8px; }
 .wrow.ng { border:1.5px solid var(--akane); background:#fff7f4; }
@@ -1320,6 +1350,117 @@ function buildIron() {
 
   return { meja: buildMeja, pinko: buildPinB, iro: buildIron };
 })();
+/* ===== ヨゴレン（第3章）── 三面図-ヨゴレン.html の 案A「しずくと 玉」（本人 2026-10-28 決定）。描き方は 三面図と 同じ（直すときは 両方）
+   よごれている 間＝悪い 顔・くすんだ よごれの 色・大きな しみ／きれいに なったら＝明るい 色・かわいい 笑顔 ===== */
+const YOGO3D = (() => {
+const C = { ai: 0x2e3a59, white: 0xffffff, momo: 0xf2a7a0, cloth: 0xfbf8ef, mouth: 0x5a2f2a, tongue: 0xe8857a };
+// 色（本人 2026-10-28「色が きれいすぎると イメージが つきにくい。よごれを 連想できる 色に」）：よごれている 間＝くすんだ よごれの 色＋大きな しみ／きれいに なったら＝明るい 色
+const PAL = {
+  ase: { warui: { body: 0xc8b67a, dark: 0x9e8a54, spot: [0xa48f58, 0x8a784a], shine: 0.3, r: 0.95, halo: 0xc8b67a }, sukkiri: { body: 0xaee0f5, dark: 0x7cc3e6, spot: [], shine: 0.9, r: 0.6 } },
+  abu: { warui: { body: 0xa8752e, dark: 0x744c1f, spot: [0x7a4f22, 0x64411c], shine: 0.75, r: 0.2, halo: 0xa8752e }, sukkiri: { body: 0xf6d98c, dark: 0xd9b458, spot: [], shine: 0.85, r: 0.35 } },
+};
+const pal = (k, mode) => PAL[k][mode === 'sukkiri' ? 'sukkiri' : 'warui'];
+let SEED = 11; const rnd = () => (SEED = (SEED * 16807) % 2147483647) / 2147483647;
+// しみ：形の ふぞろいな 大きな 平たい もよう（小さな 粒は 並べない）。pos＝面の 上の 点、n＝外向き
+function spot(g, pos, n, sz, color, r) {
+  const pts = []; for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2, rr = sz * (0.72 + rnd() * 0.5); pts.push(new THREE.Vector2(Math.cos(a) * rr, Math.sin(a) * rr * 0.85)); }
+  const sh = new THREE.Shape(); sh.moveTo(pts[0].x, pts[0].y); sh.splineThru([...pts.slice(1), pts[0]]);
+  const m = new THREE.Mesh(new THREE.ShapeGeometry(sh, 16), mat(color, { r })); m.position.copy(pos).addScaledVector(n, 0.012); m.lookAt(m.position.clone().add(n)); g.add(m); return m;
+}
+function onLathe(body, a, y) { const r = body.userData.rAt(y) * body.scale.x, dr = (body.userData.rAt(y + 0.02) - body.userData.rAt(y - 0.02)) / 0.04;
+  return { pos: V(Math.sin(a) * r + body.position.x, y + body.position.y, Math.cos(a) * r + body.position.z), n: V(Math.sin(a), -dr, Math.cos(a)).normalize() }; }
+function onBall(c, rx, ry, rz, a, el) { const d = V(Math.cos(el) * Math.sin(a), Math.sin(el), Math.cos(el) * Math.cos(a));
+  return { pos: c.clone().add(V(d.x * rx, d.y * ry, d.z * rz)), n: V(d.x / rx, d.y / ry, d.z / rz).normalize() }; }
+// 光（てかり）：面に はりつく だ円。体から はみ出さない（はみ出すと 角に 見えた。2026-10-28）
+function gloss(g, at, sx, sy, rz, op) { const m = new THREE.Mesh(new THREE.CircleGeometry(1, 24), mat(C.white, { op })); m.scale.set(sx, sy, 1); m.position.copy(at.pos).addScaledVector(at.n, 0.012); m.lookAt(m.position.clone().add(at.n)); m.rotateZ(rz); g.add(m); return m; }
+function spotsLathe(g, body, list, P) {   // 回転体の 面に：[角度, 高さ, 大きさ]
+  list.forEach(([a, y, sz], i) => { const r = body.userData.rAt(y) * body.scale.x, dr = (body.userData.rAt(y + 0.02) - body.userData.rAt(y - 0.02)) / 0.04;
+    const n = V(Math.sin(a), -dr, Math.cos(a)).normalize(), pos = V(Math.sin(a) * r, y + body.position.y, Math.cos(a) * r).add(V(body.position.x, 0, body.position.z));
+    spot(g, pos, n, sz, P.spot[i % P.spot.length], P.r); });
+}
+function spotsBall(g, c, rx, ry, rz, list, P) {   // だ円の 玉の 面に：[角度, 高さの 角, 大きさ]
+  list.forEach(([a, el, sz], i) => { const d = V(Math.cos(el) * Math.sin(a), Math.sin(el), Math.cos(el) * Math.cos(a));
+    spot(g, c.clone().add(V(d.x * rx, d.y * ry, d.z * rz)), V(d.x / rx, d.y / ry, d.z / rz).normalize(), sz, P.spot[i % P.spot.length], P.r); });
+}
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+function mat(c, o = {}) { return new THREE.MeshStandardMaterial({ color: c, roughness: o.r ?? 0.92, metalness: 0, transparent: o.op != null, opacity: o.op ?? 1 }); }
+function M(geo, c, g, o) { const m = new THREE.Mesh(geo, mat(c, o)); g.add(m); return m; }
+// 回転体：prof＝[[半径, 高さ], …]（下から 上へ）。rAt(y)＝その 高さの 半径（顔を 面に のせる ため）
+function lathe(prof, c, g, o) {
+  const m = M(new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(r, y)), 48), c, g, o);
+  m.userData.rAt = (y) => { for (let i = 0; i < prof.length - 1; i++) { const [r0, y0] = prof[i], [r1, y1] = prof[i + 1]; if ((y - y0) * (y - y1) <= 0 && y1 !== y0) return r0 + (r1 - r0) * (y - y0) / (y1 - y0); } return 0; };
+  return m;
+}
+function dropProf(H, Rb, n = 26) {   // 先が 上を 向いた しずく：下は 半径 Rb の 円、上は 先へ すぼまる
+  const P = [], a1 = 0.55;
+  for (let i = 0; i <= n; i++) { const t = -Math.PI / 2 + (Math.PI / 2 + a1) * i / n; P.push([Rb * Math.cos(t), Rb + Rb * Math.sin(t)]); }
+  const [xr, yr] = P[P.length - 1];
+  for (let i = 1; i <= 12; i++) { const t = i / 12, x = xr * (1 - t) * (1 - t * 0.35), y = yr + (H - yr) * t; P.push([Math.max(x, 0.0001), y]); }
+  P[P.length - 1][0] = 0.0001; return P;
+}
+// 顔：面の 上の 点（x, y, z）と 向き（ry, rx）。mode＝'warui'（よごれている 間の 悪い 顔）／'sukkiri'（きれいに なった かわいい 笑顔）。こわくは しない
+function face(g, x, y, z, s, mode, ry = 0, rx = 0) {
+  const f = new THREE.Group(); f.position.set(x, y, z); f.rotation.set(rx, ry, 0); f.scale.setScalar(s); g.add(f);
+  const flat = (geo, c, px, py, pz = 0, rz = 0, sx = 1, sy = 1, to = f) => { const m = new THREE.Mesh(geo, mat(c, { r: 0.8 })); m.position.set(px, py, pz); m.rotation.z = rz; m.scale.set(sx, sy, 1); to.add(m); return m; };
+  if (mode === 'sukkiri') {
+    [-1, 1].forEach((sd) => {   // まるくて 大きい 目に、光が 2つ（きらきら）
+      const e = flat(new THREE.CircleGeometry(0.088, 24), C.ai, 0.16 * sd, 0.06);
+      flat(new THREE.CircleGeometry(0.034, 16), C.white, 0.03, 0.03, 0.002, 0, 1, 1, e); flat(new THREE.CircleGeometry(0.016, 12), C.white, -0.03, -0.035, 0.002, 0, 1, 1, e);
+      flat(new THREE.CircleGeometry(0.058, 16), C.momo, 0.3 * sd, -0.05, -0.002);
+    });
+    flat(new THREE.CircleGeometry(0.08, 20, Math.PI, Math.PI), C.mouth, 0, -0.06, 0.001);   // 口を あけて にこっ
+    flat(new THREE.CircleGeometry(0.046, 16, Math.PI, Math.PI), C.tongue, 0, -0.1, 0.003, 0, 1, 0.8);
+  } else {
+    [-1, 1].forEach((sd) => {   // まぶたを 下ろした 半月の 目（内側が 下がる）＋V字の 太い まゆ＝悪だくみ
+      const w = flat(new THREE.CircleGeometry(0.09, 20, Math.PI, Math.PI), 0xfffbea, 0.15 * sd, 0.08, 0, 0.3 * sd);
+      flat(new THREE.CircleGeometry(0.036, 14), C.ai, -0.022 * sd, -0.038, 0.002, 0, 1, 1, w);
+      flat(new THREE.PlaneGeometry(0.19, 0.045), C.ai, 0.15 * sd, 0.125, 0.003, 0.5 * sd);
+    });
+    const m = flat(new THREE.CircleGeometry(0.12, 20, Math.PI, Math.PI), C.mouth, 0.02, -0.07, 0, -0.14, 1.2, 0.55);   // にやりと 開いた 口（少し ゆがめる）
+    const fang = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.065, 3), mat(0xfffbea)); fang.rotation.z = Math.PI; fang.position.set(-0.05, -0.095, 0.004); f.add(fang);   // きばを 1本だけ
+  }
+  return f;
+}
+// 面に そって 顔を 置く（回転体の 前の 面）
+function faceOn(g, body, y, s, mode, lift = 0.01, tilt = 0) { const r = body.userData.rAt(y) * body.scale.x; face(g, 0, y * body.scale.y + body.position.y, r + lift + body.position.z, s, mode, 0, tilt); }
+function shine(g, x, y, z, sx, sy, ry = 0, rz = 0, op = 0.85) { const h = M(new THREE.SphereGeometry(1, 16, 10), C.white, g, { op }); h.scale.set(sx, sy, 0.02); h.position.set(x, y, z); h.rotation.set(0, ry, rz); return h; }
+function feet(g, c, w = 0.22, y = 0.06, z = 0.08, s = 0.13) { [-w, w].forEach((x) => { const f = M(new THREE.SphereGeometry(s, 14, 10), c, g); f.scale.set(1, 0.55, 1.3); f.position.set(x, y, z); }); }
+function stitchPoly(g, pts, closed, step = 0.11, color = C.ai) {
+  const geo = new THREE.BoxGeometry(0.022, 0.022, 0.07), m = mat(color), n = closed ? pts.length : pts.length - 1;
+  for (let i = 0; i < n; i++) { const a = pts[i], b = pts[(i + 1) % pts.length], k = Math.max(1, Math.round(a.distanceTo(b) / step));
+    for (let j = 0; j < k; j += 2) { const s = new THREE.Mesh(geo, m); s.position.copy(a.clone().lerp(b, (j + 0.5) / k)); s.lookAt(b); g.add(s); } }
+}
+
+/* ===== 案A：しずくと 玉 ===== */
+function aAse(mode) {
+  const P = pal('ase', mode), g = new THREE.Group(), body = lathe(dropProf(1.55, 0.56), P.body, g, { r: P.r }); body.position.y = 0.08;
+  gloss(g, onLathe(body, -0.62, 0.92), 0.05, 0.16, -0.35, P.shine);
+  faceOn(g, body, 0.5, 1, mode, 0.03);
+  feet(g, P.dark);
+  if (mode === 'sukkiri') sparkle(g, 0.5, 1.3, 0.2);
+  else spotsLathe(g, body, [[0.95, 0.3, 0.15], [-0.75, 0.9, 0.1], [2.6, 0.55, 0.18], [-2.2, 0.3, 0.13]], P);
+  return g;
+}
+function aAbu(mode) {
+  const P = pal('abu', mode), g = new THREE.Group(), b = M(new THREE.SphereGeometry(0.64, 40, 28), P.body, g, { r: P.r }); b.scale.set(1, 0.86, 1); b.position.y = 0.62;
+  // 頭の 上の とがりは やめた（茶色の 玉＋とがりは うんちに 見える）。よごれている 間は、右下に 油の しずくが たれる
+  if (mode !== 'sukkiri') { const d = M(new THREE.SphereGeometry(0.1, 16, 12), P.dark, g, { r: P.r }); d.scale.set(0.95, 2.0, 0.75); d.position.set(0.5, 0.42, 0.33); d.rotation.set(0, 0.9, 0.25); const t = M(new THREE.SphereGeometry(0.12, 16, 12), P.dark, g, { r: P.r }); t.position.set(0.58, 0.2, 0.36); }
+  const BC = V(0, 0.62, 0); gloss(g, onBall(BC, 0.64, 0.55, 0.64, -0.62, 0.42), 0.075, 0.16, -0.5, P.shine); gloss(g, onBall(BC, 0.64, 0.55, 0.64, -0.3, 0.72), 0.035, 0.035, 0, P.shine);
+  face(g, 0, 0.56, 0.635, 1, mode);
+  feet(g, P.dark);
+  if (mode === 'sukkiri') sparkle(g, 0.6, 1.15, 0.2);
+  else spotsBall(g, V(0, 0.62, 0), 0.64, 0.55, 0.64, [[1.35, 0.25, 0.14], [-1.15, 0.3, 0.12], [2.8, 0.1, 0.2], [-2.3, -0.4, 0.15]], P);
+  return g;
+}
+// すっきりの しるし（4つの とがりの 光）。小さな 玉を 並べない
+function sparkle(g, x, y, s) {
+  const sp = new THREE.Group(); sp.position.set(x, y, 0.2); g.add(sp);
+  [0, Math.PI / 2].forEach((a) => { const b = M(new THREE.BoxGeometry(0.05, s * 2, 0.03), 0xf2c94c, sp); b.rotation.z = a; });
+  [Math.PI / 4, -Math.PI / 4].forEach((a) => { const b = M(new THREE.BoxGeometry(0.035, s * 1.1, 0.03), 0xf2c94c, sp); b.rotation.z = a; });
+}
+
+return { ase: (m) => { SEED = 11; return aAse(m); }, abura: (m) => { SEED = 23; return aAbu(m); } };
+})();
 
 /* ===== 2D の絵（あとで生徒の Canva の絵に差しかえる所） ===== */
 // 生徒が 上げた センモンの 絵（data URL）。読みこめたら 3D の 板と 左下の 顔を 描きなおす
@@ -1928,14 +2069,14 @@ function makePortraits() {
     r.setPixelRatio(1); r.setSize(W, W, false); r.setClearColor(0x000000, 0);
     const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0x9fb3a0, 0.75)); const sun = new THREE.DirectionalLight(0xfffaf0, 0.6); sun.position.set(3, 6, 8); sc.add(sun);
     const cam = new THREE.PerspectiveCamera(26, 1, 0.05, 100);
-    const shot = (obj, face) => {
+    const shot = (obj, face, fit) => {   // fit＝{ cy, h }：写す 高さの まん中と 大きさ（体の 高さに 対する 割合。ヨゴレンは 顔の まわり）
       if (!obj) return null;
       const par = obj.parent, at = par ? par.children.indexOf(obj) : -1, p0 = obj.position.clone(), r0 = obj.rotation.clone();
       obj.position.set(0, 0, 0); obj.rotation.set(0, 0, 0); sc.add(obj); obj.updateMatrixWorld(true);
       const b = new THREE.Box3().setFromObject(obj), sz = b.getSize(new THREE.Vector3()), c = b.getCenter(new THREE.Vector3());
-      const h = face ? sz.y * 0.66 : Math.max(sz.y, sz.x) * 1.04, t = face ? new THREE.Vector3(c.x, b.max.y - h * 0.44, c.z) : c;   // 顔は 帽子の 先まで 入れる
+      const h = fit ? Math.max(sz.y * fit.h, sz.x * 0.9) : face ? sz.y * 0.66 : Math.max(sz.y, sz.x) * 1.04, t = fit ? new THREE.Vector3(0, b.min.y + sz.y * fit.cy, 0) : face ? new THREE.Vector3(c.x, b.max.y - h * 0.44, c.z) : c;   // 顔は 帽子の 先まで 入れる
       const d = h / 2 / Math.tan(cam.fov * Math.PI / 360);
-      cam.position.set(t.x + d * 0.34, t.y + h * 0.08, t.z + d * 0.94); cam.lookAt(t);
+      const sx = fit ? 0.14 : 0.34; cam.position.set(t.x + d * sx, t.y + h * 0.08, t.z + d * 0.94); cam.lookAt(t);   // ヨゴレンは ほぼ 正面から（体の まん中＝原点。たれた しずくで 中心が ずれない ように）
       r.render(sc, cam); const url = cv.toDataURL('image/png');
       sc.remove(obj); obj.position.copy(p0); obj.rotation.copy(r0);
       if (par) { par.add(obj); par.children.splice(par.children.indexOf(obj), 1); par.children.splice(at, 0, obj); }   // もとの 順に もどす（children[0] を 使う 所が ある）
@@ -1945,10 +2086,32 @@ function makePortraits() {
     AIBOS.forEach((a) => { PORTRAIT['ai_' + a.key] = shot(a.g.children[0], false); });
     [['tsumugi', TSUMUGI], ['granny', GRANNY], ['post', POST], ['matsuri', MATSURI]].forEach(([k, o]) => { if (o) PORTRAIT[k] = shot(o.children[0], true); });
     NPCS.forEach((n) => { PORTRAIT[n.userData.key] = shot(n.children[0], true); });
+    Object.keys(YOGO).forEach((k) => ['warui', 'sukkiri'].forEach((m) => { PORTRAIT[`yg_${k}_${m}`] = shot(YOGO3D[k](m), false, { cy: 0.46, h: 0.92 }); }));   // ヨゴレン：せりふの 顔・洗いカード
   } catch (e) { console.warn('姿の絵を 描けなかった（文字の しるしで 出す）', e); }
   finally { if (r) { r.dispose(); if (r.forceContextLoss) r.forceContextLoss(); } }
 }
 
+/* ===== 洗い場の ヨゴレン（第3章の はじめ〜洗い終わるまで）：たらいの まわりで ぽよんと 跳ねる。洗った 服 1まいに 1体ずつ 去る =====
+   1体ずつ WASH_C3 の 服に つながる（服の よごれと 同じ 種類）。入口（+z）の がわに 多く 置く。当たりは なし */
+const YOGOS = [], YOGO_ANG = { sweater: -0.45, shirt: 0.45, apron: 1.2, scarf: -1.95 };
+function buildYogo() {
+  YOGOS.forEach((y) => scene.remove(y.g)); YOGOS.length = 0;
+  WASH_C3.forEach((it) => {
+    const r = lowPoly(() => YOGO3D[it.stain]('warui'), 0.6), h = new THREE.Box3().setFromObject(r).getSize(new THREE.Vector3()).y; r.scale.setScalar(heroH * 0.3 / h);
+    const a = YOGO_ANG[it.id] || 0, dx = Math.sin(a) * 2.3, dz = Math.cos(a) * 2.3, m = new THREE.Group(), g = new THREE.Group();
+    m.add(CFG.merge ? bake(r) : r); g.add(m); g.add(blobShadow(0.4)); g.position.set(WASH.x + dx, 0, WASH.z + dz); g.visible = false; scene.add(g);
+    YOGOS.push({ id: it.id, g, m });
+  });
+}
+function yogoTick(t) {
+  const on = curCh() === 4 && (S.story.c3 === 'start' || S.story.c3 === 'arai');
+  YOGOS.forEach((y, i) => {
+    y.g.visible = on && !S.story.w.includes(y.id); if (!y.g.visible) return;
+    const hop = Math.abs(Math.sin(t * 3.1 + i * 1.7)), sq = hop < 0.25 ? (0.25 - hop) * 0.5 : 0;   // 着地で 少し つぶれる（ぽよん）
+    y.m.position.y = hop * 0.32; y.m.scale.set(1 + sq, 1 - sq, 1 + sq);
+    y.g.rotation.y = Math.atan2(player.position.x - y.g.position.x, player.position.z - y.g.position.z);   // 主人公の ほうを 向いて、にやにや
+  });
+}
 /* ===== センモン（2D の板の絵を 3D の中に立てる） ===== */
 function senmonSprite(s) {
   const tex = new THREE.CanvasTexture(cardCanvas(s));
@@ -3383,7 +3546,7 @@ const TAIKEN_CH = [
   { k: 'c1', ch: 2, ic: 'castle', t: '第1章「糸と布の塔」', when: '第3時', min: 10, learn: '繊維 → 糸 → 布（織物・編物・不織布）と、混用（合体）' },
   { k: 'c2p', ch: 3, ic: 'school', t: '第2章 れんしゅう「真夏の学校の肌着」', when: '第4時', min: 5, learn: '聞き込み → フォーメーション → 旅 → ふりかえり の 進め方' },
   { k: 'c2', ch: 3, ic: 'checkroom', t: '第2章 町の依頼（お祝いの式・雪の峠・夏祭りの村）', when: '第4時', min: 17, learn: 'ゆかたの 合わせ方（右前）を たしかめてから、町の依頼を 1つ えらぶ。着る人の ねがいと 場面に 合わせ、重ね着と 混用で 服を 仕立てる' },
-  { k: 'c3', ch: 4, ic: 'local_laundry_service', t: '第3章「ヨゴレンのいたずら」', when: '第5時', min: 15, learn: '取扱い表示を 読んで 洗う・推理の 時間' },
+  { k: 'c3', ch: 4, ic: 'local_laundry_service', t: '第3章「ヨゴレンのいたずら」', when: '第5時', min: 15, learn: '洗う 前に 予想 → 取扱い表示を 読んで 洗う・推理の 時間。ゲームの あと、教室で 小さな 洗濯実験' },
   { k: 'c5', ch: 5, ic: 'content_cut', t: '針と糸のわざ', when: '基礎縫いの あと', min: 5, learn: 'ほつれ・ボタン・すそを、合う 縫い方で 直す' },
   { k: 'c6', ch: 6, ic: 'workspace_premium', t: '終章「一人前の試験」', when: '第8(9)時', min: 10, learn: 'キットを 繊維の 知識で 読み解き、装備カードを つくる' },
   { k: 'c7', ch: 7, ic: 'warehouse', t: 'エピローグ「ギルドの倉庫」', when: '製作の 最後', min: 10, learn: '服を よみがえらせる（再利用）・新しい ギルド長を 選ぶ' },
@@ -3401,7 +3564,7 @@ function openTaikenHome() {
     <div class="hfaces">${ALL_SENMON.slice(0, 4).map((x) => `<img src="${faceUrl(x)}" alt="${x.name}">`).join('')}</div>
     <div class="hbtns"><button class="main" id="tkCh"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span>章を えらんで 体験</button><button id="tkStart">はじめから 遊ぶ（オープニングから）</button>${d ? '<button id="tkCont">つづきから</button>' : ''}</div>
     <details class="tkAbout"><summary>この単元の 流れ（試す 先生へ）</summary><table class="tb"><tr><th>章</th><th>授業</th><th>ゲームで すること</th></tr>${TAIKEN_CH.map((x) => `<tr><td>${x.t}</td><td>${x.when}</td><td>${x.learn}</td></tr>`).join('')}</table>
-      <p>全11〜12時間。ゲームは 各時間の 10〜15分で、体操服の タグ・布・洗剤など 教室の 実物で 確かめる 活動と 組み合わせる。章は 授業で 先生が ひらく（体験版では 全部 ひらいてある）。判定は「ねがいに 合っている／まだ」で、答えでは なく 見る所の 手がかりを 出す。</p></details>
+      <p>全11〜12時間。第1〜5時は、物語と ゲーム（止めずに 章の おわりまで・25〜30分）→ 全員で 実物（体操服の タグ・布・汚れ布。ゆかたは 動画）を たしかめて、ワークシートに まとめる。ゲームの 中では 予想だけ 手帳に のこす。章は 授業で 先生が ひらく（体験版では 全部 ひらいてある）。判定は「ねがいに 合っている／まだ」で、答えでは なく 見る所の 手がかりを 出す。</p></details>
     <p class="hnote"><span class="material-symbols-outlined" aria-hidden="true">info</span>名前・せりふは 仮。きろくは この ブラウザの 中だけで、外へは 送りません</p>${READY ? '' : '<p class="hwait" id="hWait">せかいを じゅんびしています…</p>'}</div>`;
   $('#tkCh').onclick = openTaikenChapters;
   $('#tkStart').onclick = () => homeIntro(0);
@@ -3634,9 +3797,10 @@ function lnHtml(l, isNew) {
   return `<p class="ln${nw}" style="--c:${WHO_C[l.who] || 'var(--ai)'}"><b>${who}</b>「${gl(fill(l.t))}」</p>`;
 }
 // 話している人の しるし：センモンは 顔、相棒は 道具の しるし、人は 名前の 1文字（新しい アイコンは 描かない）
-const WHO_PT = { 'ツムギ': 'tsumugi', 'ギルド長ツムギ': 'tsumugi', 'マトイ': 'matoi', 'ボロン': 'boron', '式典の町のおばあさん': 'granny', 'おばあさん': 'granny', '峠の ゆうびん屋さん': 'post', 'ゆうびん屋さん': 'post', '夏祭りの村の ヒナタ': 'matsuri', 'ヒナタ': 'matsuri' };
+const WHO_PT = { 'アセジミン': 'yg_ase_warui', 'アブラーン': 'yg_abura_warui', 'ツムギ': 'tsumugi', 'ギルド長ツムギ': 'tsumugi', 'マトイ': 'matoi', 'ボロン': 'boron', '式典の町のおばあさん': 'granny', 'おばあさん': 'granny', '峠の ゆうびん屋さん': 'post', 'ゆうびん屋さん': 'post', '夏祭りの村の ヒナタ': 'matsuri', 'ヒナタ': 'matsuri' };
 const ptImg = (k, bg) => (PORTRAIT[k] ? `<img class="bdg pt" src="${PORTRAIT[k]}" alt="" style="background:${bg}">` : '');
 function badgeHtml(l) {
+  if (l.pt && PORTRAIT[l.pt]) return ptImg(l.pt, '#f3ead2');   // その 行だけの 顔（ヨゴレンが きれいに なった 笑顔 など）
   if (l.who === 'me') return ptImg('me', '#dbe8f5') || '<span class="bdg" style="background:#5f8fc0"><span class="material-symbols-outlined" aria-hidden="true">person</span></span>';
   const pk = WHO_PT[l.who] || (Object.keys(TOWN_TALK).find((k) => TOWN_TALK[k].name === l.who));
   if (pk && PORTRAIT[pk]) return ptImg(pk, '#f3ead2');
@@ -4814,7 +4978,7 @@ function washCard(it, title, onClean, onBack) {   // 下に「あと ○つ：�
     const all = rows.every((r) => pick[r.k]);
     openSheet(`<h2>${title}</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>タグ（品質表示）と ヨゴレンを 見て、6つ えらんで「洗う」。記号は「記号の 一覧」、繊維は 手帳（表1）で たしかめよう</span></p>
       <div class="wtop"><div class="wtag">${ptagHtml(it.fibs, careOf(it))}<button class="clbtn" id="bCList"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span>${st.list ? '記号の 一覧を とじる' : '記号の 一覧（洗い場の かべ）'}</button></div>
-        <div class="wstain"><span class="material-symbols-outlined" aria-hidden="true">${y.ic}</span><span><b>${who}</b><br>${it.at ? `${it.at}に ` : ''}<b>${y.n}</b>（${y.k}）が ついている</span></div></div>
+        <div class="wstain">${PORTRAIT[`yg_${it.stain}_warui`] ? `<img class="ygimg" src="${PORTRAIT[`yg_${it.stain}_warui`]}" alt="${y.n}">` : `<span class="material-symbols-outlined" aria-hidden="true">${y.ic}</span>`}<span><b>${who}</b><br>${it.at ? `${it.at}に ` : ''}<b>${y.n}</b>（${y.k}）が ついている</span></div></div>
       ${st.list ? `<div class="clwrap">${careList()}</div>` : ''}
       <div class="wrows">${rows.map((r, i) => { const ng = st.tried && st.bad.includes(r.k) && (st.miss[r.k] || 0) >= 2, ok = false;   // 1回目は どの 行かを 見せない（押し直しで 通れないように）
         return `<div class="wrow${ng ? ' ng' : ok ? ' ok' : ''}"><div class="wl">${'①②③④⑤⑥'[i]} ${r.l}<small>${r.s}</small></div><div class="wo">${r.opts.map((o) => `<button data-k="${r.k}" data-o="${o}" class="${pick[r.k] === o ? 'pick' : ''}">${esc(o)}</button>`).join('')}</div>${ng ? `<div class="wh">手がかり：${gl(r.hint)}</div>` : ''}</div>`; }).join('')}</div>
@@ -4889,19 +5053,52 @@ function c3Arai() {
     washCard(it, `洗い場：${fill(it.who)}`, () => {
       S.story.w.push(it.id); saveGame();
       const y = YOGO[it.stain], ex = { sweater: 'ちぢまずに、ふんわり もどった！', shirt: 'えりが すっきり。混用の 布も、低いほうの 温度で ぴしっと！', apron: 'エプロンが まっしろ！', scarf: 'つやが もどった！ 黄ばみも ない！' }[it.id];
-      talkSeq('すっきり！', [{ scr: `${fill(it.who)}が きれいに なった。${ex}` }, { who: y.n, t: it.stain === 'ase' ? 'ヨゴレ〜ン……すっきり。また 汗を かいたら 来るね〜' : 'ヨゴレ〜ン……落とされちゃった。すっきりした〜' }, { scr: `${y.n}は、すっきりした 顔で 去っていった` }], () => c3Arai(), 'つぎへ');
+      talkSeq('すっきり！', [{ scr: `${fill(it.who)}が きれいに なった。${ex}` }, ...yogoChange(it.stain), { who: y.n, pt: `yg_${it.stain}_sukkiri`, t: it.stain === 'ase' ? 'ヨゴレ〜ン……すっきり。また 汗を かいたら 来るね〜' : 'ヨゴレ〜ン……落とされちゃった。すっきりした〜' }, { scr: `${y.n}は、すっきりした 顔で 去っていった` }], () => c3Arai(), 'つぎへ');
     }, () => c3Arai());
   }));
   $('#bClose').onclick = closeSheet;
   if ($('#bNext')) { $('#bNext').onclick = () => c3AfterWash(); $('#bNext').focus(); } else { const f = $('#sheet [data-w]:not([disabled])'); if (f) f.focus(); }
 }
-function c3Predict() {   // 洗う 前に 予想 2つ（あとで 教室の 小さな 実験で たしかめる）
-  const ok = ckOf('bubun') && ckOf('ryou');
-  openSheet(`<h2>ギルドの洗い場</h2>${say(aiNm(), aiSnd() + '洗う 前に、予想して おこう。あとで 教室で、本物の 汚れ布で たしかめるよ。')}
-    ${predictHtml('bubun')}<div style="height:8px"></div>${predictHtml('ryou')}
-    <div class="row"><button id="bClose">あとで</button><button class="main" id="bGo"${ok ? '' : ' disabled'}>予想を 手帳に 書いて、洗い場へ</button></div>`, true);
-  bindPredict('bubun', c3Predict); bindPredict('ryou', c3Predict);
-  $('#bClose').onclick = closeSheet; $('#bGo').onclick = c3Arai; if (ok) $('#bGo').focus();
+// 洗い場の 予想の 絵（本人 2026-10-28「文字が 小さく、文字だけで 見づらい。図解や イラストで」）。油の よごれ＝からし色の しみ
+const OIL = '#c98a2b', SBLOB = 'M0 -17C10 -19 19 -10 17 0C16 9 9 16 -1 15C-11 17 -18 9 -16 -1C-15 -10 -9 -16 0 -17Z';
+function stainCloth(lv, lab) {   // 白い 綿の 布と 油の しみ。lv：0 落ちた／1 少し のこる／2 ほとんど のこる／3 洗う 前
+  const op = [0, 0.38, 0.78, 0.95][lv], sc = [1, 0.62, 0.95, 1][lv];
+  return `<svg viewBox="0 0 64 64" class="scloth" role="img" aria-label="${lab}"><rect x="3" y="3" width="58" height="58" rx="3" fill="#fff" stroke="rgba(46,58,89,.5)"/>
+    <rect x="7.5" y="7.5" width="49" height="49" fill="none" stroke="rgba(46,58,89,.28)" stroke-dasharray="3 3"/>
+    ${lv ? `<path d="${SBLOB}" transform="translate(32 33) scale(${sc})" fill="${OIL}" opacity="${op}"/>` : `<path d="${SBLOB}" transform="translate(32 33)" fill="none" stroke="rgba(46,58,89,.3)" stroke-dasharray="2 3"/>`}</svg>`;
+}
+const basinSvg = () => `<svg viewBox="0 0 90 62" class="basin" role="img" aria-label="洗面器で 全体を 押し洗い"><path d="M7 22L16 56Q45 62 74 56L83 22Z" fill="#d9eef9" stroke="rgba(46,58,89,.55)"/>
+  <ellipse cx="45" cy="22" rx="38" ry="7" fill="#bfe0f2" stroke="rgba(46,58,89,.55)"/><rect x="30" y="20" width="24" height="12" rx="2" fill="#fff" stroke="rgba(46,58,89,.4)" transform="rotate(-8 42 26)"/>
+  <circle cx="22" cy="34" r="3" fill="#fff"/><circle cx="62" cy="40" r="2.6" fill="#fff"/><circle cx="68" cy="31" r="2" fill="#fff"/></svg>`;
+const spoonSvg = (n) => `<svg viewBox="0 0 ${n * 30} 20" role="img" aria-label="計量スプーン ${n}杯">${Array.from({ length: n }, (_, i) => `<g transform="translate(${i * 30} 0)"><rect x="15" y="8" width="13" height="4" rx="2" fill="#7fa650"/><ellipse cx="9" cy="10" rx="8" ry="7" fill="#fff" stroke="rgba(46,58,89,.55)"/><ellipse cx="9" cy="9" rx="5" ry="3.6" fill="#e6eef6"/></g>`).join('')}</svg>`;
+const AR = '<span class="material-symbols-outlined ar" aria-hidden="true">arrow_forward</span>';
+const PU = (pic, cap, cls = '') => `<span class="pu${cls}">${pic}<small>${cap}</small></span>`;
+const PIC = (ic) => `<span class="material-symbols-outlined pic" aria-hidden="true">${ic}</span>`;
+const PRED_FIG = {   // 教室で やる 実験（第5時-洗濯の小さな実験.md §4）を、A・B の 2行の 流れで
+  bubun: { h: '部分洗い', fig: () => `<div class="prow"><span class="pab">A</span><b>部分洗い する</b>${PU(stainCloth(3, '油の よごれが ついた 布'), '油の よごれ')}${AR}${PU(PIC('water_drop'), '洗剤液を<br>よごれに つける')}${AR}${PU(PIC('pinch'), 'つまみ洗い<br>（20回）')}${AR}${PU(basinSvg(), '全体を<br>押し洗い')}</div>
+      <div class="prow"><span class="pab">B</span><b>部分洗い しない</b>${PU(stainCloth(3, '油の よごれが ついた 布'), '油の よごれ')}${AR}${PU('<span class="pline">何も しない</span>', '', ' none span3')}${AR}${PU(basinSvg(), '全体を<br>押し洗い')}</div>`,
+    q: 'B（部分洗い しない）の 油の よごれは、どう なる？', pic: { '落ちる': [0], '少し のこる': [1], 'ほとんど のこる': [2] } },
+  ryou: { h: '洗剤の 量', fig: () => `<div class="prow"><span class="pab">A</span><b>めやすどおり</b>${PU(stainCloth(3, 'よごれが ついた 布'), 'よごれた 布')}${AR}${PU(`<span class="spoons">${spoonSvg(1)}</span>`, '洗剤を めやすどおり（計量スプーン 1杯）', ' span3')}${AR}${PU(basinSvg(), '押し洗い')}</div>
+      <div class="prow"><span class="pab">B</span><b>めやすの 2倍</b>${PU(stainCloth(3, 'よごれが ついた 布'), 'よごれた 布')}${AR}${PU(`<span class="spoons">${spoonSvg(2)}</span>`, '洗剤を めやすの 2倍（2杯）', ' span3')}${AR}${PU(basinSvg(), '押し洗い')}</div>
+      <p class="sub" style="margin:2px 0 4px">水の 量・洗い方・洗う 回数は、A と B で そろえる（変えるのは 洗剤の 量だけ）</p>`,
+    q: 'B（めやすの 2倍）の よごれは、A（めやすどおり）と くらべて どう なる？', pic: { 'もっと よく 落ちる': [1, 0], 'あまり 変わらない': [1, 1], '落ちにくく なる': [1, 2] } },
+};
+// 正しく 洗えたら、ヨゴレンが 悪い 顔から 笑顔に 変わる 絵（本人 2026-10-28「きれいに なったら、かわいく 笑顔に」）
+const yogoChange = (k) => (PORTRAIT[`yg_${k}_warui`] && PORTRAIT[`yg_${k}_sukkiri`] ? [{ html: `<div class="ygchg"><img src="${PORTRAIT[`yg_${k}_warui`]}" alt="${YOGO[k].n}（よごれている）"><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span><img src="${PORTRAIT[`yg_${k}_sukkiri`]}" alt="${YOGO[k].n}（きれいに なった）"></div>` }] : []);
+function c3Predict(step = ckOf('bubun') && !ckOf('ryou') ? 1 : 0) {   // 洗う 前に 予想 2つ（1つずつ。あとで 教室の 小さな 実験で たしかめる）
+  const k = step ? 'ryou' : 'bubun', x = CHECKS.find((y) => y.k === k), P = PRED_FIG[k], v = ckOf(k);
+  const pic = (o) => { const L = P.pic[o]; return L.length === 1 ? stainCloth(L[0], o) : `<span class="pair"><span>${stainCloth(L[0], 'めやすどおり')}A めやす</span><span>${stainCloth(L[1], o)}B 2倍</span></span>`; };
+  openSheet(`<h2>ギルドの洗い場</h2>${step ? '' : say(aiNm(), aiSnd() + '洗う 前に、予想して おこう。あとで 教室で、本物の 汚れ布で たしかめるよ。')}
+    <p class="pstep">予想 ${step + 1} / 2　<b>${P.h}</b>　── 教室で やる 実験</p><div class="pfig">${P.fig()}</div>
+    <p class="pq">${P.q}</p>
+    <div class="popts">${x.opts.map((o) => `<button data-ck="${o}" data-ckk="${k}" aria-pressed="${v === o}" class="${v === o ? 'on' : ''}">${pic(o)}<span>${o}</span></button>`).join('')}</div>
+    <p class="pnote"><span class="material-symbols-outlined" aria-hidden="true">edit_note</span><span>えらんだ 予想は 手帳に のこる。教室で 班に 分かれて たしかめ、あとで 持ち寄る（いまは ゲームを つづける）</span></p>
+    <div class="row">${step ? '<button id="bBack">もどる</button>' : '<button id="bClose">あとで</button>'}<button class="main" id="bGo"${v ? '' : ' disabled'}>${step ? '予想を 手帳に 書いて、洗い場へ' : 'つぎの 予想へ'}</button></div>`, true);
+  bindPredict(k, () => c3Predict(step));
+  if ($('#bClose')) $('#bClose').onclick = closeSheet;
+  if ($('#bBack')) $('#bBack').onclick = () => c3Predict(0);
+  $('#bGo').onclick = step ? c3Arai : () => c3Predict(1);
+  if (v) $('#bGo').focus();
 }
 function c3AfterWash() {
   talkSeq('ギルドの洗い場', [
@@ -5642,6 +5839,7 @@ function step(dt) {
   const walking = len > 0 && !S.open;
   body.position.y = walking ? Math.abs(Math.sin(t * 11)) * 0.12 : body.position.y * 0.8;
   body.rotation.z = walking ? Math.sin(t * 11) * 0.08 : body.rotation.z * 0.8;
+  yogoTick(t);
   // 相棒：肩のあたりを、ふわふわ飛んでついてくる
   const ry = player.rotation.y, sn = Math.sin(ry), cs = Math.cos(ry), kf = Math.min(1, dt * 5);
   AIBOS.forEach((a) => {
@@ -5867,7 +6065,7 @@ const SM = window.SM = { S, manual: false, coll: () => COLL.length, push: (x, z)
     renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, CFG.pr));
     $('#stage').appendChild(renderer.domElement);
     scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(55, 1, 0.1, 400); raycaster = new THREE.Raycaster();
-    buildWorld(); buildCast(); await CLASS_READY; buildSenmon(); makePortraits(); renderHud(); renderQuest(); wire(); resize();
+    buildWorld(); buildCast(); await CLASS_READY; buildSenmon(); buildYogo(); makePortraits(); renderHud(); renderQuest(); wire(); resize();
     // おばあさんの ベンチと 晴れ着は buildWorld の 中（布の 世界に そろえた）
     const gs3 = textSprite('ギルド長ツムギ', 260, 56); gs3.scale.multiplyScalar(0.42); gs3.position.set(TSU_SPOT[0], 3.35, TSU_SPOT[2]); scene.add(gs3); TSU_SIGN = gs3;
     const gs2 = textSprite(QUEST.who, 300, 56); gs2.scale.multiplyScalar(0.42); gs2.position.set(GRANNY_SPOT[0], 3.35, GRANNY_SPOT[2]); scene.add(gs2);
