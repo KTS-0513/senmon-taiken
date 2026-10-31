@@ -31,7 +31,7 @@ html, body { margin:0; height:100%; overflow:hidden; background:#cfeeff; font-fa
 .qsteps { font-size:12px; color:#5a6582; }
 #party button { font-size:12px; padding:4px 9px; margin-left:4px; }
 .boxst { font-size:12px; text-align:center; }
-#party img { width:42px; height:42px; border-radius:50%; border:2px dashed var(--ai); background:#fff; cursor:pointer; }
+#party img { width:42px; height:42px; border-radius:6px; border:2px dashed var(--ai); background:#fff; cursor:pointer; }
 #btns { right:12px; bottom:12px; display:flex; gap:8px; padding:8px; }
 button { font:inherit; font-size:14px; background:var(--kinari); border:none; border-radius:4px; padding:7px 13px; cursor:pointer; color:var(--ai); outline:2px dashed rgba(46,58,89,.6); outline-offset:-4px; }
 button:hover { background:var(--kinari2); }
@@ -119,7 +119,7 @@ table.tb th { background:var(--kinari2); white-space:nowrap; }
 .cell.dis:hover, .demo .cell:hover { background:#fffdf6; }
 .demo .cell { cursor:default; }
 .cell small { font-size:12px; color:#5a6582; }
-.cell img { width:34px; height:34px; border-radius:50%; border:2px solid #fff; flex:none; }
+.cell img { width:34px; height:34px; border-radius:5px; border:2px solid #fff; flex:none; }
 .cell .pct { position:absolute; right:5px; top:2px; font-size:12px; font-weight:700; color:rgba(46,58,89,.7); }
 .cell .x { position:absolute; right:3px; bottom:3px; width:22px; height:22px; padding:0; border-radius:50%; background:rgba(255,255,255,.9); outline:1px solid rgba(46,58,89,.4); outline-offset:0; display:flex; align-items:center; justify-content:center; }
 .cell .x .material-symbols-outlined { font-size:15px; }
@@ -132,7 +132,7 @@ table.tb th { background:var(--kinari2); white-space:nowrap; }
 .hcard { display:flex; gap:8px; align-items:flex-start; padding:6px 8px; background:#fffdf6; border:1.5px dashed rgba(46,58,89,.45); border-radius:6px; font-size:13px; cursor:pointer; }
 .hcard:hover { background:#fbecc4; }
 .hcard.sel { outline:3px solid var(--akane); outline-offset:1px; }
-.hcard img { width:36px; height:36px; border-radius:50%; flex:none; }
+.hcard img { width:36px; height:36px; border-radius:5px; flex:none; }
 .hs { display:flex; flex-wrap:wrap; gap:2px 8px; font-size:12px; color:#5a6582; margin-top:2px; }
 .hs .on { color:var(--ai); font-weight:700; background:#fbecc4; padding:0 3px; }
 .where { font-size:12px; color:var(--akane); margin-top:2px; }
@@ -220,7 +220,7 @@ details.memo:not([open]) > summary::after { content:'expand_more'; }
 .region { display:flex; flex-direction:column; align-items:center; gap:4px; width:120px; padding:10px 6px; background:#fff; border:1.5px dashed rgba(46,58,89,.45); border-radius:8px; font-size:13px; }
 .region .material-symbols-outlined { font-size:40px; }
 .art .faces { flex-basis:100%; display:flex; justify-content:center; gap:8px; }
-.art .faces img { width:40px; height:40px; border-radius:50%; border:2px dashed var(--ai); background:#fff; }
+.art .faces img { width:40px; height:40px; border-radius:6px; border:2px dashed var(--ai); background:#fff; }
 .guildArt { display:flex; flex-direction:column; align-items:center; gap:6px; font-size:14px; }
 .guildArt .ring { width:120px; height:120px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; outline:2px dashed var(--akane); outline-offset:-8px; }
 .guildArt .ring .material-symbols-outlined { font-size:68px; color:var(--akane); }
@@ -237,7 +237,7 @@ body.cine .panel, body.cine #prompt { opacity:0; pointer-events:none; }
 .homeCard h1 { font-family:"Yusei Magic",sans-serif; font-weight:400; font-size:40px; letter-spacing:2px; margin:4px 0 2px; color:var(--ai); }
 .homeCard .lead { font-size:14px; margin:6px 0 12px; }
 .hfaces { display:flex; justify-content:center; gap:8px; margin:0 0 14px; }
-.hfaces img { width:44px; height:44px; border-radius:50%; border:2px dashed var(--ai); background:#fff; }
+.hfaces img { width:44px; height:44px; border-radius:6px; border:2px dashed var(--ai); background:#fff; }
 .hname { display:flex; flex-direction:column; align-items:center; gap:6px; font-size:14px; }
 .hname input { font:inherit; font-size:18px; width:min(260px,70vw); padding:8px 10px; text-align:center; border:2px dashed rgba(46,58,89,.55); border-radius:6px; background:#fff; color:var(--ai); }
 .hname input:focus { outline:3px solid rgba(200,85,61,.35); outline-offset:1px; }
@@ -454,6 +454,7 @@ table.mix td.up { background:#fbecc4; font-weight:700; color:var(--akane); }
 .aibo .hello { margin:6px 0 2px; font-size:15px; line-height:1.7; color:var(--akane); text-align:left; background:#fffdf6; border-radius:6px; padding:6px 9px; }
 .aibo .hint { margin-top:auto; font-size:12px; color:#5a6582; }
 .bdg.pt { padding:0; object-fit:cover; }
+.bdg.sq { border-radius:8px; }   /* センモンの 絵は 四角 */
 @media (max-height:720px) { .aibo .aiimg { width:112px; height:112px; } .aibos.big .aibo { gap:2px; padding:8px; } .aibo dt { margin-top:2px; } }
 @media (max-width:640px) { .aibos.big { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; } .aibo .aiimg { width:96px; height:96px; } .aibo dl { font-size:12px; } .aibo .hello { font-size:13px; } }
 .pause { background:#fff; border-left:4px solid var(--karashi); padding:10px 12px; margin:10px 0; font-size:14px; }
@@ -703,7 +704,27 @@ button:disabled { opacity:.45; cursor:default; }
 <div id="fail">3D の部品（Three.js）を読みこめませんでした。<br>インターネットにつながっているか、学校のフィルターで cdnjs が止められていないかを確かめてください。<button class="dbgLink" onclick="showDebug()">デバッグログを表示</button></div>
 
 <script>
+/* 起動の 見張り（2026-10-28 本番 GAS で「読みこんでいます」のまま 止まった）：ゲームの プログラムが はじまらないとき、理由を 画面に 出す */
+window.SENMON_BOOT = 0;
+window.addEventListener('error', function (e) {
+  if (window.SENMON_BOOT) return;
+  var d = document.getElementById('loading'); if (!d) return;
+  d.style.flexDirection = 'column';
+  var snip = '', q = function (t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+  try { var L = document.documentElement.outerHTML.split('\n'), c = (e.colno || 1) - 1;
+    [e.lineno - 2, e.lineno - 1, e.lineno].forEach(function (i) { var t = L[i] || ''; snip += '<br>[' + (i + 1) + '] ' + q(t.slice(Math.max(0, c - 90), c)) + ' ◆ ' + q(t.slice(c, c + 60)); }); } catch (x) { snip = ''; }
+  d.innerHTML = 'ゲームの プログラムが はじまりませんでした。この 画面を 先生に 見せてください。<br><small style="font-size:12px;color:#7a2e1f;max-width:94vw;word-break:break-all;text-align:left">' + q(String(e.message || 'error').slice(0, 300)) + '（' + (e.lineno || '-') + '：' + (e.colno || '-') + '）' + snip + '</small>';
+});
+setTimeout(function () {
+  if (window.SENMON_BOOT) return;
+  var d = document.getElementById('loading'); if (!d || d.querySelector('small')) return;
+  d.style.flexDirection = 'column';
+  d.innerHTML += '<br><small style="font-size:12px">プログラムが はじまりません（まちがいの 知らせも ありません）。もう一度 開いても 同じなら、先生に 知らせてください。</small>';
+}, 8000);
+</script>
+<script>
 'use strict';
+window.SENMON_BOOT = 1;
 /* ===== [S0] 画面の中の デバッグログ（Chromebook では 検証ツールが 開けない。題の画面・先生用・つながらないとき・3D が 読めないときに 開ける） ===== */
 const DBG = [];
 (function trapLog() {
@@ -1483,21 +1504,25 @@ function cardCanvas(s) {
   g.fillStyle = tcol; roundRect(g, 2, 2, 124, 156, 10); g.fill();
   g.fillStyle = '#fffdf6'; roundRect(g, 8, 8, 112, 144, 7); g.fill();
   g.setLineDash([7, 5]); g.lineWidth = 2.5; g.strokeStyle = tcol; roundRect(g, 13, 13, 102, 134, 5); g.stroke(); g.setLineDash([]);
-  g.fillStyle = hueCss(s.hue); g.beginPath(); g.arc(64, 64, 40, 0, Math.PI * 2); g.fill();
-  if (imgOk(s)) { g.save(); g.beginPath(); g.arc(64, 64, 40, 0, Math.PI * 2); g.clip(); g.drawImage(s.imgEl, 24, 24, 80, 80); g.restore(); }   // 生徒が 上げた 絵
-  else {
-    g.fillStyle = '#2e3a59'; g.beginPath(); g.arc(50, 58, 5, 0, 7); g.arc(78, 58, 5, 0, 7); g.fill();
-    g.lineWidth = 3; g.beginPath(); g.arc(64, 70, 12, 0.2, Math.PI - 0.2); g.stroke();
+  if (imgOk(s)) {   // 生徒が 上げた 絵は 正方形の まま（すみまで 見せる）
+    g.save(); roundRect(g, 22, 17, 84, 84, 6); g.clip(); g.drawImage(s.imgEl, 22, 17, 84, 84); g.restore();
+    g.lineWidth = 1.5; g.strokeStyle = 'rgba(46,58,89,.3)'; roundRect(g, 22, 17, 84, 84, 6); g.stroke();
+  } else {   // 絵が まだ ない ＝ 丸い 顔
+    g.fillStyle = hueCss(s.hue); g.beginPath(); g.arc(64, 59, 40, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#2e3a59'; g.beginPath(); g.arc(50, 53, 5, 0, 7); g.arc(78, 53, 5, 0, 7); g.fill();
+    g.lineWidth = 3; g.strokeStyle = '#2e3a59'; g.beginPath(); g.arc(64, 65, 12, 0.2, Math.PI - 0.2); g.stroke();
   }
-  g.fillStyle = tcol; roundRect(g, 16, 16, 30, 20, 4); g.fill();
-  g.fillStyle = '#fff'; g.font = 'bold 14px sans-serif'; g.textAlign = 'center'; g.fillText(s.fib[0], 31, 31);
-  g.fillStyle = '#2e3a59'; g.font = 'bold 18px sans-serif'; g.fillText(s.name, 64, 134);
+  g.textAlign = 'center';
+  g.fillStyle = '#2e3a59'; g.font = 'bold 17px sans-serif'; g.fillText(s.name, 64, 121, 96);
+  g.font = 'bold 11px sans-serif'; const pw = Math.min(96, g.measureText(s.fib).width + 14);   // 繊維の 札は 名前の 下（絵の すみに かぶせない）
+  g.fillStyle = tcol; roundRect(g, 64 - pw / 2, 126, pw, 15, 3); g.fill();
+  g.fillStyle = '#fff'; g.fillText(s.fib, 64, 137.5, pw - 8);
   return c;
 }
 function faceUrl(s) {
   const c = document.createElement('canvas'); c.width = 64; c.height = 64; const g = c.getContext('2d');
-  g.fillStyle = hueCss(s.hue); g.fillRect(0, 0, 64, 64);
-  if (imgOk(s)) { g.drawImage(s.imgEl, 0, 0, 64, 64); return c.toDataURL(); }   // 生徒が 上げた 絵
+  if (imgOk(s)) { g.drawImage(s.imgEl, 0, 0, 64, 64); return c.toDataURL(); }   // 生徒が 上げた 絵（四角の 枠で そのまま 見せる）
+  g.fillStyle = hueCss(s.hue); g.beginPath(); g.arc(32, 32, 32, 0, Math.PI * 2); g.fill();   // 絵が ない ときは 丸い 顔
   g.fillStyle = '#23303f'; g.beginPath(); g.arc(24, 28, 4, 0, 7); g.arc(40, 28, 4, 0, 7); g.fill();
   g.lineWidth = 3; g.strokeStyle = '#23303f'; g.beginPath(); g.arc(32, 34, 9, 0.2, Math.PI - 0.2); g.stroke();
   g.fillStyle = TYPE_COLOR[FIB[s.fib].type]; g.font = 'bold 13px sans-serif'; g.textAlign = 'center'; g.fillText(s.fib[0], 32, 58);
@@ -2274,7 +2299,7 @@ function openQuiz(s, qs, i, picked = null) {
 function openDex() {
   const all = dexList();
   openSheet(`<h2>センモン図鑑</h2><p class="sub">クラスの ${all.length}体。出会うと 名前と 作った人が 見える${all.some((x) => x.maker) ? '' : '（見本の 名前）'}</p><div class="dex">${all.map((s) => S.met.has(s.name)
-    ? `<div>${imgOk(s) ? `<img src="${faceUrl(s)}" alt="" style="width:22px;height:22px;border-radius:50%;vertical-align:-6px;margin-right:4px">` : `<span class="sw" style="background:${hueCss(s.hue)}"></span>`}${s.name}<br><small>${s.fib}${s.maker ? `・作った人：${esc(s.maker)}` : ''}</small></div>` : '<div style="color:#9a9a92">？？？<br><small>まだ出会っていない</small></div>').join('')}</div><div class="row"><button id="bClose">とじる</button></div>`);
+    ? `<div>${imgOk(s) ? `<img src="${faceUrl(s)}" alt="" style="width:22px;height:22px;border-radius:4px;vertical-align:-6px;margin-right:4px">` : `<span class="sw" style="background:${hueCss(s.hue)}"></span>`}${s.name}<br><small>${s.fib}${s.maker ? `・作った人：${esc(s.maker)}` : ''}</small></div>` : '<div style="color:#9a9a92">？？？<br><small>まだ出会っていない</small></div>').join('')}</div><div class="row"><button id="bClose">とじる</button></div>`);
   $('#bClose').onclick = closeSheet;
 }
 /* ===== ことばの解説：せりふの中の専門用語に点線を引き、クリック（タップ）で説明を出す =====
@@ -3294,7 +3319,7 @@ function openMineImg() {
   const draw = () => {
     openSheet(`<h2>自分の センモンの 絵</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>Canva で かいた 絵（PNG・JPEG）を えらんで「この 絵に する」</span></p>
       <div class="mineBox"><img src="${cardCanvas(Object.assign({}, m, { imgEl: pick ? pick.el : m.imgEl })).toDataURL()}" alt=""><div><label class="fileBtn"><input type="file" id="mImg" accept="image/png,image/jpeg"><span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>絵を えらぶ</label>
-      <p class="berr" id="mErr"></p><p class="sub" style="margin:4px 0">絵は 正方形に 切りぬいて、小さく してから 送る</p></div></div>
+      <p class="berr" id="mErr"></p><p class="sub" style="margin:4px 0">${TAIKEN ? '絵は 正方形に 切りぬいて、この ブラウザの 中にだけ のこす（体験版は どこにも 送らない）' : '絵は 正方形に 切りぬいて、小さく してから 送る'}</p></div></div>
       <div class="row"><button id="bBack">もどる</button><button class="main" id="bUp"${pick ? '' : ' disabled'}>この 絵に する</button></div>`);
     $('#mImg').onchange = async (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; try { pick = await shrinkImage(f); draw(); } catch (er) { $('#mErr').textContent = er.message; } };
     $('#bBack').onclick = () => openNote('items');
@@ -3805,7 +3830,7 @@ function badgeHtml(l) {
   const pk = WHO_PT[l.who] || (Object.keys(TOWN_TALK).find((k) => TOWN_TALK[k].name === l.who));
   if (pk && PORTRAIT[pk]) return ptImg(pk, '#f3ead2');
   const sen = (S.mine && S.mine.name === l.who) ? S.mine : ALL_SENMON.find((x) => x.name === l.who);
-  if (sen) return `<img class="bdg" src="${faceUrl(sen)}" alt="">`;
+  if (sen) return `<img class="bdg sq" src="${faceUrl(sen)}" alt="">`;
   const ak = Object.keys(AIBO_NM).find((k) => AIBO_NM[k] === l.who);
   if (ak) return ptImg('ai_' + ak, AIBO_CARD[ak].bg + '55') || `<span class="bdg" style="background:${AIBO_CARD[ak].bg}"><span class="material-symbols-outlined" aria-hidden="true">${AIBO_CARD[ak].ic}</span></span>`;
   return `<span class="bdg" style="background:${WHO_C[l.who] || '#7a8296'}">${esc(String(l.who).charAt(0))}</span>`;
@@ -4051,7 +4076,7 @@ const CH_LEARN = [
 /* あとで 教室で たしかめる こと（本人決定 2026-10-27：ゲームは 止めずに 章の おわりまで 進め、そのあと 全員で 実物や 動画で たしかめて、
    ワークシートに まとめる。ゆかたは 実物が ないので アプリと 動画で）。予想は S.reflect.ck に のこす（きろくと いっしょに 送られる） */
 const CHECKS = [
-  { k: 'tag', ch: 0, t: '体操服・制服の タグを 読む（となり同士で。自分の 服は ぬがない。見える 所だけ）。綿・毛・ポリエステルの 布に さわる', q: '体操服の タグには、何の 繊維が 書いてあると 思う？', opts: ['綿', 'ポリエステル', '綿と ポリエステル（混用）', 'ほかの 繊維'] },
+  { k: 'tag', ch: 0, t: '体操服・制服の タグを 読む（となり同士で。自分の 服は ぬがない。見える 所だけ）。タグの 繊維を 教科書の 表1で 調べ、着ている 自分の そでに さわって くらべる', q: '体操服の タグには、何の 繊維が 書いてあると 思う？', opts: ['綿', 'ポリエステル', '綿と ポリエステル（混用）', 'ほかの 繊維'] },
   { k: 'nuno', ch: 2, t: '布を 引っぱる・切り口を 見る（織物・編物・不織布）。キットの フリースと フェルトも さわって くらべる', q: '引っぱって、いちばん よく のびる 布は？', opts: ['織物', '編物', '不織布'] },
   { k: 'yukata', ch: 3, t: 'ゆかたの 着方の 動画を 見て、衿の 重なり（右前）を たしかめる（先生が 見せる）' },
   { k: 'bubun', ch: 4, t: '先生が 用意した 汚れ布で、部分洗いを する・しないを 比べる（班で 分けて、あとで 持ち寄る）', q: '油の よごれは、部分洗いを しないで ふつうに 洗うだけで 落ちる？', opts: ['落ちる', '少し のこる', 'ほとんど のこる'] },
@@ -4110,7 +4135,7 @@ function openBirth() {
     <div class="birth"><div><p class="lab">① 担当の 繊維（教室で 決めたもの）</p><div class="fibs2">${groups.map(([ty, fs]) => `<div class="grp" style="--c:${TYPE_COLOR[ty]}"><span>${ty}</span>${fs.map((f) => `<button data-f="${f}">${f}</button>`).join('')}</div>`).join('')}</div>
       <p class="lab">② 名前（8文字まで）</p><input id="bName" maxlength="8" autocomplete="off" placeholder="センモンの 名前" value="${esc(b.name)}">
       <p class="lab">③ 布の色（色相環の 12色）</p><div class="hues">${Array.from({ length: 12 }, (_, h) => `<button data-h="${h}" style="background:${hueCss(h)}" aria-label="${HUE_NAME[h]}" title="${HUE_NAME[h]}"></button>`).join('')}</div>
-      ${TAIKEN ? '' : `<p class="lab">④ センモンの 絵（Canva で かいた 絵。あとからでも 上げられる）</p><div class="upl"><label class="fileBtn"><input type="file" id="bImg" accept="image/png,image/jpeg"><span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>絵を えらぶ</label><span id="bImgSt" class="sub" style="margin:0">${b.img ? '絵を えらんだ' : 'えらばなければ、丸い 顔で 生まれる'}</span>${b.img ? '<button id="bImgX">絵を やめる</button>' : ''}</div>`}
+      <p class="lab">④ センモンの 絵（Canva で かいた 絵。あとからでも 上げられる）</p><div class="upl"><label class="fileBtn"><input type="file" id="bImg" accept="image/png,image/jpeg"><span class="material-symbols-outlined" aria-hidden="true">add_photo_alternate</span>絵を えらぶ</label><span id="bImgSt" class="sub" style="margin:0">${b.img ? '絵を えらんだ' : 'えらばなければ、丸い 顔で 生まれる'}</span>${b.img ? '<button id="bImgX">絵を やめる</button>' : ''}</div>${TAIKEN ? '<p class="sub" style="margin:4px 0">体験版では、絵は この ブラウザの 中にだけ のこる（どこにも 送らない）</p>' : ''}
       <p class="berr" id="bErr"></p></div>
       <div class="bprev" id="bPrev"></div></div>
     <div class="row"><button id="bClose">あとで</button><button class="main" id="bGo" disabled>生まれる！</button></div>`, true);
@@ -4191,7 +4216,7 @@ function openNote(tab = 'nazo', back = null) {   // back＝もどる 先（推�
   } else if (tab === 'items') {
     const mine = S.mine && S.mine !== ALL_SENMON[0] && !S.mine.sample ? S.mine : null;
     body = (mine ? `<div class="mineBox"><img src="${cardCanvas(mine).toDataURL()}" alt=""><div><b>自分の センモン「${esc(mine.name)}」</b><br><small>${mine.fib}・${HUE_NAME[mine.hue]}</small>
-      <p class="sub" style="margin:4px 0">${MY_HIDDEN ? '絵は、先生と 相談しよう（いまは 丸い 顔で 出ている）' : imgOk(mine) ? 'Canva の 絵が ついている' : 'まだ 絵が ない（丸い 顔）'}</p>${TAIKEN ? '' : `<button id="bMineImg">${imgOk(mine) ? '絵を 上げ直す' : '絵を 上げる'}</button>`}</div></div>` : '') + (S.items.length ? `<div class="items">${S.items.map((k) => `<div class="it${ITEMS[k].box ? ' wide' : ''}"><span class="material-symbols-outlined" aria-hidden="true">${ITEMS[k].ic}</span><span><b>${ITEMS[k].n}</b><br><small>${gl(ITEMS[k].d)}</small>${ITEMS[k].box ? `<span class="dbox">${ITEMS[k].box}</span>` : ''}</span>${k === 'map' ? '<button id="bMap">見る</button>' : k === 'card' && S.story.card && S.story.card.done ? '<button id="bCard">見る</button>' : ''}</div>`).join('')}</div>` : '<p class="sub">まだ 何も ない</p>');
+      <p class="sub" style="margin:4px 0">${MY_HIDDEN ? '絵は、先生と 相談しよう（いまは 丸い 顔で 出ている）' : imgOk(mine) ? 'Canva の 絵が ついている' : 'まだ 絵が ない（丸い 顔）'}</p><button id="bMineImg">${imgOk(mine) ? '絵を 上げ直す' : '絵を 上げる'}</button></div></div>` : '') + (S.items.length ? `<div class="items">${S.items.map((k) => `<div class="it${ITEMS[k].box ? ' wide' : ''}"><span class="material-symbols-outlined" aria-hidden="true">${ITEMS[k].ic}</span><span><b>${ITEMS[k].n}</b><br><small>${gl(ITEMS[k].d)}</small>${ITEMS[k].box ? `<span class="dbox">${ITEMS[k].box}</span>` : ''}</span>${k === 'map' ? '<button id="bMap">見る</button>' : k === 'card' && S.story.card && S.story.card.done ? '<button id="bCard">見る</button>' : ''}</div>`).join('')}</div>` : '<p class="sub">まだ 何も ない</p>');
   } else {
     const c = curCh();
     body = `<table class="tb"><tr><th>章</th><th>授業</th><th>ようす</th></tr>${CH.map((x, i) => `<tr${i === c ? ' style="background:#fbecc4"' : ''}><td>${x.name}「${x.title}」</td><td>${x.when}</td><td>${S.ch.done.includes(i) ? 'おわった' : i === c ? '<b style="color:var(--akane)">いま</b>' : i <= S.ch.open ? (READY_CH.includes(i) ? 'ひらいた' : '準備中（見本）') : 'まだ ひらいていない'}</td></tr>`).join('')}</table>
