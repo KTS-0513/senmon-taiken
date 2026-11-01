@@ -269,6 +269,10 @@ body.cine .panel, body.cine #prompt { opacity:0; pointer-events:none; }
 .ysteps { display:flex; justify-content:center; flex-wrap:wrap; gap:4px 8px; font-size:13px; color:#9a9280; }
 .ysteps .on { color:var(--akane); font-weight:700; }
 .ysteps .did { color:var(--ai); }
+.yarn.spin svg { width:min(560px,90vw); }   /* 1階：繊維 → 糸 を 手で */
+button.hold { touch-action:none; user-select:none; -webkit-user-select:none; min-width:150px; }
+button.hold small { display:block; font-size:11px; font-weight:400; opacity:.9; }
+button.hold.holding { transform:translateY(1px); filter:brightness(.92); }
 .cloths { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:6px 0 10px; }
 @media (max-width:640px) { .cloths { grid-template-columns:minmax(0,1fr); } }
 .cloth { position:relative; background:#fff; border:1.5px dashed rgba(46,58,89,.45); border-radius:6px; padding:8px; text-align:center; font-size:13px; line-height:1.5; }
@@ -4450,16 +4454,103 @@ function openTower() {
   if ($('#bLab')) $('#bLab').onclick = towerLab;
   if ($('#bOut')) { $('#bOut').onclick = () => { if (S.story.c1 === 'tower') S.story.c1 = 'touge'; closeSheet(); renderQuest(); saveGame(); toast('帰り道は、雨の峠を とおる（赤い ！）'); }; $('#bOut').focus(); }
 }
+/* 1階 糸の階（本人 2026-11-01「もっと わかりやすく、繊維を 糸に する 過程を 見せたい」）
+   自分の 手で：① くしで とかす（押している 間、ばらばらの 繊維が 同じ 向きに そろう＝引きそろえる）
+   → ② つむを まわす（押している 間、そろった 帯が ねじれて 細く なる＝よりを かける）→ ③ 引っぱって くらべる（よりの ない 束は ぬける／糸は ぬけない）。
+   t.y：0 はじめ・1 そろえた・2 糸に なった・3 くらべた（前の きろくの 3＝できた は そのまま） */
+const SPIN_N = 46;
+function spinFib(seed) {   // 繊維の ばらばらの 位置と、そろえた ときの 位置
+  let s = seed; const r = () => ((s = (s * 16807) % 2147483647) / 2147483647), F = [];
+  for (let i = 0; i < SPIN_N; i++) F.push({ x0: 30 + r() * 240, y0: 18 + r() * 64, a0: r() * Math.PI * 2, c0: (r() < 0.5 ? -1 : 1) * (6 + r() * 7), l: 20 + r() * 14, x1: 34 + r() * 232, b: ((i + 0.5) / SPIN_N) * 2 - 1, k: r() });
+  return F;
+}
+const ease = (p) => (p < 0.5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2);
+// p1：そろえる（0〜1）、p2：よりを かける（0〜1）、tool：'comb' くし・'spin' つむ
+function spinSvg(F, hue, p1, p2, tool, t = 0) {
+  const A = hueCss(hue, 44), D = hueCss(hue, 32), L = hueCss(hue, 84), e2 = ease(p2), R = [], cl = (v) => Math.max(0, Math.min(1, v));
+  const cx = 18 + 264 * p1, tw = (x) => ease(cl(p2 * 1.7 - (1 - (x - 22) / 256) * 0.7));   // くしの 位置／ねじれは つむ（右）の ほうから 進む
+  const hw0 = 16 - 9 * e2, id = `spc${++YARN_ID}`;
+  if (e2 > 0.02) R.push(`<clipPath id="${id}"><rect x="22" y="${50 - hw0 - 2}" width="256" height="${2 * hw0 + 4}" rx="${hw0 + 2}"/></clipPath><rect x="22" y="${50 - hw0 - 2}" width="256" height="${2 * hw0 + 4}" rx="${hw0 + 2}" fill="${L}" opacity="${(0.25 + 0.75 * e2).toFixed(2)}"/>`);
+  if (e2 > 0.35) { const S = []; for (let x = 0; x < 300; x += 8) S.push(`<line x1="${x}" y1="${50 + hw0 + 2}" x2="${x + (hw0 + 2) * 1.4}" y2="${50 - hw0 - 2}" stroke="${A}" stroke-width="3"/>`);   // ねじれの しま（よりの 向き）
+    R.push(`<g clip-path="url(#${id})" opacity="${((e2 - 0.35) / 0.65 * 0.55).toFixed(2)}">${S.join('')}</g>`); }
+  F.forEach((f, i) => {
+    const al = tool === 'comb' ? ease(cl((cx - f.x0) / 70)) : 1;   // くしが 通った 所から そろう
+    const yb = 50 + f.b * 14, x = f.x0 + (f.x1 - f.x0) * al, y = f.y0 + (yb - f.y0) * al;
+    let a = f.a0 % Math.PI; if (a > Math.PI / 2) a -= Math.PI; a *= 1 - al;
+    const c = f.c0 * (1 - al * 0.85), k = tool === 'spin' ? tw(x) : 0, hw = 16 - 9 * k;
+    const yy = 50 + (y - 50) * (hw / 16), aa = a - Math.atan(k * 1.1), ll = f.l * (1 - 0.15 * k);
+    const dx = Math.cos(aa) * ll / 2, dy = Math.sin(aa) * ll / 2, nx = -Math.sin(aa) * c, ny = Math.cos(aa) * c;
+    const back = k > 0.15 && i % 3 === 0;   // ねじると、うらに 回った 繊維は うすく（反対の かたむき）
+    const d = back ? `M${(x + dx).toFixed(1)} ${(yy - dy).toFixed(1)}Q${(x + nx).toFixed(1)} ${(yy + ny).toFixed(1)} ${(x - dx).toFixed(1)} ${(yy + dy).toFixed(1)}`
+      : `M${(x - dx).toFixed(1)} ${(yy - dy).toFixed(1)}Q${(x + nx).toFixed(1)} ${(yy + ny).toFixed(1)} ${(x + dx).toFixed(1)} ${(yy + dy).toFixed(1)}`;
+    R.push(`<path d="${d}" fill="none" stroke="${back ? L : i % 5 === 0 ? D : A}" stroke-width="${back ? 2 : 2.8}" stroke-linecap="round"${back ? ' opacity=".8"' : ''}/>`);
+  });
+  if (e2 > 0.5) R.push(`<rect x="22" y="${50 - hw0 - 2}" width="256" height="${2 * hw0 + 4}" rx="${hw0 + 2}" fill="none" stroke="rgba(46,58,89,.45)" stroke-width="1.2" opacity="${((e2 - 0.5) * 2).toFixed(2)}"/>`);
+  if (tool === 'comb' && p1 < 1) {   // くし：左から 右へ とかしていく
+    const cx = 18 + 264 * p1;
+    R.push(`<g transform="translate(${cx.toFixed(1)} 0)"><rect x="-6" y="6" width="6" height="88" rx="2" fill="#b07a48" stroke="#6b4a2e" stroke-width="1.2"/>${Array.from({ length: 16 }, (_, k) => `<line x1="0" y1="${10 + k * 5.3}" x2="8" y2="${10 + k * 5.3}" stroke="#6b4a2e" stroke-width="1.6" stroke-linecap="round"/>`).join('')}</g>`);
+  }
+  if (tool === 'spin') {   // つむ（右の はし）：まわして ねじる。円盤の しまが 動く
+    const ph = (t * 6) % 1;
+    R.push(`<rect x="278" y="${50 - 2}" width="18" height="4" rx="2" fill="#9a6a44"/><ellipse cx="290" cy="50" rx="5" ry="16" fill="#d9a05a" stroke="#6b4a2e" stroke-width="1.2"/>`
+      + [0, 0.33, 0.66].map((o) => { const yy = 50 + 14 * Math.sin(((ph + o) % 1) * Math.PI * 2); return `<line x1="286.5" y1="${yy.toFixed(1)}" x2="293.5" y2="${yy.toFixed(1)}" stroke="#6b4a2e" stroke-width="1.6"/>`; }).join(''));
+    if (p2 > 0 && p2 < 1) R.push(`<path d="M262 22a10 6 0 1 1 18 0" fill="none" stroke="var(--akane)" stroke-width="2"/><path d="M277 18l3 4 -4 2" fill="none" stroke="var(--akane)" stroke-width="2" stroke-linecap="round"/>`);
+  }
+  return `<svg viewBox="0 0 300 100" role="img" aria-label="${p2 >= 1 ? 'よりを かけた 糸' : p1 >= 1 ? '引きそろえた 繊維' : 'ばらばらの 繊維'}">${R.join('')}</svg>`;
+}
+// 引っぱって くらべる：上＝よりを かけていない 束（すべって ぬける）、下＝よりを かけた 糸（からみあって ぬけない）
+function pullSvg(F, hue, q) {
+  const A = hueCss(hue, 44), L = hueCss(hue, 84), e = ease(q), R = [];
+  R.push('<text x="8" y="16" class="glab" style="font-size:11px">よりなし（引きそろえた だけ）</text><text x="8" y="80" class="glab" style="font-size:11px">よりあり（糸）</text>');
+  F.forEach((f, i) => {   // 上：左の 半分は 左へ、右の 半分は 右へ すべる
+    const side = f.x1 < 150 ? -1 : 1, mv = side * e * (22 + f.k * 34), fall = e * f.k * 6;
+    const x = f.x1 + mv, y = 40 + f.b * 11 + fall;
+    R.push(`<line x1="${(x - f.l / 2).toFixed(1)}" y1="${y.toFixed(1)}" x2="${(x + f.l / 2).toFixed(1)}" y2="${y.toFixed(1)}" stroke="${A}" stroke-width="2.4" stroke-linecap="round"/>`);
+  });
+  const st = e * 4, hw = 8;   // 下：少し のびるだけ
+  R.push(`<rect x="${22 - st}" y="${100 - hw - 2}" width="${256 + 2 * st}" height="${2 * hw + 4}" rx="${hw + 2}" fill="${L}"/>`);
+  F.forEach((f, i) => { const x = 22 + (f.x1 - 22) * (256 + 2 * st) / 256 - st, y = 100 + f.b * hw, back = i % 3 === 0, a = back ? 0.5 : -0.5, dx = Math.cos(a) * f.l * 0.42, dy = Math.sin(a) * f.l * 0.42;
+    R.push(`<line x1="${(x - dx).toFixed(1)}" y1="${(y - dy).toFixed(1)}" x2="${(x + dx).toFixed(1)}" y2="${(y + dy).toFixed(1)}" stroke="${back ? L : A}" stroke-width="${back ? 1.8 : 2.4}" stroke-linecap="round"${back ? ' opacity=".8"' : ''}/>`); });
+  R.push(`<rect x="${22 - st}" y="${100 - hw - 2}" width="${256 + 2 * st}" height="${2 * hw + 4}" rx="${hw + 2}" fill="none" stroke="rgba(46,58,89,.45)" stroke-width="1.2"/>`);
+  if (q > 0) [[40, -1], [100, -1], [40, 1], [100, 1]].forEach(([y, s]) => { const x = s < 0 ? 14 - e * 8 : 286 + e * 8;   // 引っぱる 向きの 矢印
+    R.push(`<path d="M${x} ${y}h${s * 10}m${-s * 4} -4l${s * 4} 4 ${-s * 4} 4" fill="none" stroke="var(--akane)" stroke-width="2" stroke-linecap="round"/>`); });
+  if (q >= 1) R.push('<text x="292" y="16" text-anchor="end" class="glab" style="font-size:13px;fill:var(--akane)">すべって ぬけた！</text><text x="292" y="80" text-anchor="end" class="glab" style="font-size:13px;fill:#3f6b22">からみあって ぬけない！</text>');
+  return `<svg viewBox="0 0 300 118" role="img" aria-label="よりの ない 束と 糸を 引っぱって くらべる">${R.join('')}</svg>`;
+}
+// 押している 間 すすむ ボタン（はなすと とまる。キーボードの Space・Enter でも すすむ）
+function holdBtn(btn, onStep, onDone, ms) {
+  let raf = null, last = 0;
+  const tick = (now) => { const d = Math.min(64, now - last); last = now; if (onStep(d / ms)) { stop(); onDone(); return; } raf = requestAnimationFrame(tick); };
+  const start = (e) => { if (e) e.preventDefault(); if (raf) return; btn.classList.add('holding'); last = performance.now(); raf = requestAnimationFrame(tick); };
+  const stop = () => { if (raf) cancelAnimationFrame(raf); raf = null; btn.classList.remove('holding'); };
+  btn.addEventListener('pointerdown', start); ['pointerup', 'pointerleave', 'pointercancel', 'blur'].forEach((ev) => btn.addEventListener(ev, stop));
+  btn.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (onStep(0.12)) onDone(); } });
+  btn.addEventListener('contextmenu', (e) => e.preventDefault());
+}
 function towerF1() {
-  const t = T1(), m = myS(), st = t.y, acts = ['繊維を 引きそろえる', 'よりを かける（ねじる）', 'もっと よりを かける'];
+  const t = T1(), m = myS(), hue = m.hue == null ? 2 : m.hue, F = spinFib(17 + hue);
+  if (t.y > 3) t.y = 3;
+  const st = t.y, steps = ['繊維', '引きそろえる', 'よりを かける', '糸', '引っぱって くらべる'];
+  const guide = ['「くしで とかす」を 押しつづけよう。ばらばらの 繊維が、同じ 向きに そろっていく（引きそろえる）',
+    '「つむを まわす」を 押しつづけよう。そろえた 繊維を ねじる（よりを かける）',
+    '糸に なった！ よりを かけていない 束と、糸を 引っぱって くらべよう（「引っぱる」を 押しつづける）',
+    'よりの ない 束は ぬけて、糸は ぬけなかった！'][st];
+  const pic = st === 0 ? spinSvg(F, hue, 0, 0, 'comb') : st === 1 ? spinSvg(F, hue, 1, 0, 'spin') : st === 2 ? pullSvg(F, hue, 0) : pullSvg(F, hue, 1);
+  const act = ['くしで とかす', 'つむを まわす', '引っぱる'][st];
   openSheet(`<h2>1階　糸の階</h2>${lnHtml(ai({ meja: 'シュルルッ……ここは 糸の階。ばらばらの 繊維を、糸に するんだって！', pinko: 'チクッ！ ここは 糸の階！ ばらばらの 繊維を、ぴしっと 糸に するよ！', iro: 'シュー……ここは 糸の階。ばらばらの 繊維が、糸に なるんだ。' }))}
-    <p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>${st < 3 ? `下の ボタンを おして、${esc(m.name)}の 繊維を 糸に しよう（${st + 1}/3）` : '糸に なった！'}</span></p>
-    <div class="yarn">${yarnSvg(st, m.hue)}</div>
-    <div class="ysteps">${['繊維', '引きそろえる', 'よりを かける', '糸'].map((x, i) => `<span class="${i === st ? 'on' : i < st ? 'did' : ''}">${x}</span>`).join('<span>→</span>')}</div>
-    ${st >= 3 ? `<div class="memo" style="margin-top:8px">${gl(`${esc(m.name)}の 繊維が、糸に なった（進化）！ 繊維を 引きそろえて ねじる（よりを かける）と、繊維どうしが からみあって、糸に なる。`)}</div>` : ''}
-    <div class="row"><button id="bBack">塔の 入口へ</button>${st < 3 ? `<button class="main" id="bAct">${acts[st]}</button>` : '<button class="main" id="bNext">2階へ のぼる</button>'}</div>`, true);
+    <p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>${gl(guide)}</span></p>
+    <div class="yarn spin" id="spinPic">${pic}</div>
+    <div class="ysteps">${steps.map((x, i) => { const now = [0, 1, 3, 4][st]; return `<span class="${i === now ? 'on' : i < now ? 'did' : ''}">${x}</span>`; }).join('<span>→</span>')}</div>
+    ${st >= 3 ? `<div class="memo" style="margin-top:8px">${gl(`${esc(m.name)}の 繊維が、糸に なった（進化）！ 繊維を 引きそろえて ねじる（よりを かける）と、繊維どうしが からみあって、引っぱっても ぬけない、長い 糸に なる。`)}</div>`
+      + lnHtml(ai({ meja: 'シュルルッ……よりの ない 束は、するっと ぬけたね！ ねじると、からみあうんだ。', pinko: 'チクッ！ ねじった 糸は、引っぱっても ぬけない！', iro: 'シュー……ねじるだけで、こんなに じょうぶに なるんだね。' })) : ''}
+    <div class="row"><button id="bBack">塔の 入口へ</button>${st < 3 ? `<button class="main hold" id="bAct">${act}<small>押しつづける</small></button>` : '<button class="main" id="bNext">2階へ のぼる</button>'}</div>`, true);
   $('#bBack').onclick = openTower;
-  if ($('#bAct')) { $('#bAct').onclick = () => { t.y++; towerF1(); }; $('#bAct').focus(); }
+  if ($('#bAct')) {
+    let p = 0, tt = 0; const pic2 = $('#spinPic');
+    const draw = () => { pic2.innerHTML = st === 0 ? spinSvg(F, hue, p, 0, 'comb') : st === 1 ? spinSvg(F, hue, 1, p, 'spin', tt) : pullSvg(F, hue, p); };
+    holdBtn($('#bAct'), (dp) => { p = Math.min(1, p + dp); tt += dp; draw(); return p >= 1; }, () => { t.y = st + 1; saveGame(); setTimeout(towerF1, st === 2 ? 700 : 350); }, st === 1 ? 2200 : 1600);
+    $('#bAct').focus();
+  }
   if ($('#bNext')) { $('#bNext').onclick = () => { t.f = Math.max(t.f, 1); saveGame(); towerF2(); }; $('#bNext').focus(); }
 }
 function towerF2() {
