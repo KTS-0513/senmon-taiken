@@ -64,7 +64,9 @@ table.tb th { background:var(--kinari2); white-space:nowrap; }
 .ftorso { grid-area:torso; }
 .fleft { grid-area:layers; min-width:0; }
 .fright { grid-area:hand; display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:6px; }
-@media (max-width:640px) { .fwrap { grid-template-columns:minmax(0,1fr); grid-template-areas:"guide" "torso" "layers" "hand"; } .ftorso svg { max-width:170px; } }
+.fwrap.one { grid-template-areas:"guide guide" "torso layers" "torso hand"; grid-template-rows:auto auto 1fr; }   /* 1段ずつ：てもちを いまの 段の 下（トルソーの 横）に */
+.fwrap.one .fright { grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); align-content:start; }
+@media (max-width:640px) { .fwrap, .fwrap.one { grid-template-columns:minmax(0,1fr); grid-template-areas:"guide" "torso" "layers" "hand"; grid-template-rows:none; } .ftorso svg { max-width:170px; } }
 /* トルソー（上半身の服の台）：外側＝上着・肌側＝肌着。えらんだ服が点滅する（本人 2026-10-24） */
 .ftorso svg { display:block; width:100%; max-width:230px; height:auto; margin:0 auto; }
 .tcap { margin:2px 0 0; font-size:12px; color:#5a6582; text-align:center; }
@@ -615,6 +617,17 @@ button:disabled { opacity:.45; cursor:default; }
 .ask { margin:8px 0 0; font-size:16px; line-height:1.8; }
 .memo { background:#fffdf6; border:1.5px dashed rgba(46,58,89,.5); border-radius:4px; padding:6px 8px; font-size:13px; margin-bottom:8px; }
 .colorrow { display:flex; gap:12px; align-items:center; margin-top:8px; font-size:13px; }
+.fsteps { display:flex; flex-wrap:wrap; align-items:center; gap:4px; margin:6px 0 8px; }   /* 1段ずつの 道のり */
+.fsteps .fst { min-height:36px; padding:4px 10px; font-size:14px; background:#fffdf6; border:1.5px dashed rgba(46,58,89,.35); border-radius:6px; display:inline-flex; align-items:center; gap:4px; }
+.fsteps .fst.now { border:2px solid var(--akane); background:#fff; font-weight:700; }
+.fsteps .fst.did { border-style:solid; border-color:rgba(95,158,60,.7); color:#3f6b22; }
+.fsteps .fst .material-symbols-outlined { font-size:18px; }
+.fsteps .fst:disabled { opacity:.45; }
+.fsteps .farr { color:#9a9280; }
+.fnow { font-size:16px; font-weight:700; margin:4px 0 6px; } .fnow small { font-size:13px; font-weight:400; color:#5a6582; margin-left:8px; }
+.flead { margin:0 0 2px; } .fmore { display:inline; margin-left:6px; } .fmore summary { display:inline; cursor:pointer; color:#3d6aa5; text-decoration:underline dotted; } .fmore[open] { display:block; margin:4px 0 0; }
+.fmemo1 { margin:0 0 8px; }
+.fsum { display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap; margin-bottom:8px; } .fsumt { flex:0 0 170px; } .fsumt svg { width:170px; height:auto; } .fsumr { flex:1 1 260px; min-width:0; font-size:14px; } .fsumr p { margin:0 0 6px; }
 .shiage { margin-top:10px; padding:10px; background:#fffdf6; border:1.5px dashed rgba(46,58,89,.35); border-radius:6px; }   /* 港の舟こぎ大会：仕上げ（背中の 印・えりの 色） */
 .shrow { display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap; }
 .shpic { flex:0 0 230px; } .shpic svg { width:230px; height:auto; display:block; }
@@ -2685,7 +2698,7 @@ function torsoSvg(o) {
   const lay = (k) => o.layers.find((x) => x.k === k), who = (k, i) => o.get(k, i) && byName(o.get(k, i));
   const fill = (k) => (o.paint && o.paint[k] ? o.paint[k] : !who(k, 0) ? '#fff' : who(k, 1) ? `url(#pt-${k})` : hueCss(who(k, 0).hue, 72));
   const pat = (k) => (who(k, 0) && who(k, 1) ? `<pattern id="pt-${k}" patternUnits="userSpaceOnUse" width="8" height="8"><rect width="8" height="8" fill="${hueCss(who(k, 0).hue, 72)}"/><rect width="3.4" height="3.4" fill="${hueCss(who(k, 1).hue, 72)}"/><rect x="4" y="4" width="3.4" height="3.4" fill="${hueCss(who(k, 1).hue, 72)}"/></pattern>` : '');   // 混用の布＝細かい織り目（まぜる色が 約35%）。太いしまは「しま柄の服」に見えるので やめた
-  const selK = FSEL && FSEL.k, flash = FLASH, hasMid = !!(lay('mid') && !lay('mid').lock);
+  const selK = (FSEL && FSEL.k) || o.only, flash = FLASH, hasMid = !!(lay('mid') && !lay('mid').lock);
   FLASH = null;
   const gar = (k) => { const lock = !!lay(k).lock, empty = !lock && !who(k, 0) && !(o.paint && o.paint[k]);
     return `<g class="gar${lock ? ' lock' : ''}${empty ? ' empty' : ''}${selK === k ? ' on' : ''}${flash === k ? ' just' : ''}" data-layer="${k}">${k === 'out' && o.yukata ? ykOut(o.yukata, lock ? 'none' : fill(k)) : TORSO[k].map((d) => `<path class="gp" d="${d}" fill="${lock ? 'none' : fill(k)}"/><path class="gs" d="${d}"/>`).join('')}</g>`; };
@@ -2698,7 +2711,7 @@ function torsoSvg(o) {
 }
 function boardHtml(o) {
   const at = (n) => { for (const L of o.layers) for (const i of [0, 1]) if (!L.lock && o.get(L.k, i) === n) return `${LNAME[L.k]}（${i ? 'まぜる' : 'おもな'}）`; return ''; };
-  const selL = FSEL && FSEL.k, hi = selL ? o.layers.find((L) => L.k === selL).see : [];
+  const selL = (FSEL && FSEL.k) || o.only, hi = selL ? o.layers.find((L) => L.k === selL).see : [];
   const cell = (L, i) => {
     const n = o.get(L.k, i), s = n && byName(n), dis = i === 1 && !o.get(L.k, 0), sel = FSEL && FSEL.k === L.k && FSEL.i === i;
     return `<div role="button" tabindex="0" class="cell ${i ? 'mix' : 'main'}${s ? ' fill' : ''}${sel ? ' sel' : ''}${dis ? ' dis' : ''}" data-k="${L.k}" data-i="${i}"${s ? ` style="background:${hueCss(s.hue, 80)}"` : ''}><span class="pct">${i ? 35 : 65}%</span>`
@@ -2716,9 +2729,9 @@ function boardHtml(o) {
   const guide = FSEL && FSEL.n ? `<b>${FSEL.n}</b> を どこに 置く？ 布の 欄を タップ`
     : FSEL ? `<b>${LNAME[FSEL.k]}の ${PART[FSEL.i]}</b>に 置く子を、てもちから タップ（点滅している 服）`
     : '① てもちの センモンを タップ　→　② 服か、布の 欄を タップ';
-  return `<div class="fwrap${FSEL && FSEL.n ? ' aiming' : ''}" id="fboard"><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>${guide}</span></p>
+  return `<div class="fwrap${FSEL && FSEL.n ? ' aiming' : ''}${o.only ? ' one' : ''}" id="fboard"><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>${guide}</span></p>
     <div class="ftorso">${torsoSvg(o)}<p class="tcap">服を タップしても えらべる${o.yukata ? `<br>ゆかた：${o.yukata === 'R' ? '右前' : '左前'}（前から 見ると 衿が「y」の字）` : ''}</p></div>
-    <div class="fleft"><div class="board"><div class="edge"><span class="material-symbols-outlined" aria-hidden="true">visibility</span>そと（人から 見える）</div>${o.layers.map(layer).join('')}<div class="edge body"><span class="material-symbols-outlined" aria-hidden="true">accessibility_new</span>からだ（肌）</div></div></div>
+    <div class="fleft"><div class="board"><div class="edge"><span class="material-symbols-outlined" aria-hidden="true">visibility</span>そと（人から 見える）</div>${o.layers.filter((L) => !o.only || L.k === o.only).map(layer).join('')}<div class="edge body"><span class="material-symbols-outlined" aria-hidden="true">accessibility_new</span>からだ（肌）</div></div></div>
     <div class="fright"><p class="hhead">てもち</p>${PARTY.map((s) => `<div role="button" tabindex="0" class="hcard${FSEL && FSEL.n === s.name ? ' sel' : ''}" data-n="${s.name}"><img src="${faceUrl(s)}" alt=""><div><b>${s.name}</b><br><small>${s.fib}</small><div class="hs">${o.hand.map((k) => `<span${hi.includes(k) ? ' class="on"' : ''}>${STAT[k]} ${SYM[FIB[s.fib].st[k]]}</span>`).join('')}</div>${at(s.name) ? `<div class="where">${at(s.name)}に いる</div>` : ''}</div></div>`).join('')}</div></div>`;
 }
 function bindBoard(o, redraw) {
@@ -2727,6 +2740,7 @@ function bindBoard(o, redraw) {
     const x = e.target.closest('.x'), c = e.target.closest('.cell'), h = e.target.closest('.hcard'), g = e.target.closest('.gar');
     if (x) { o.set(x.dataset.k, +x.dataset.i, null); boardNorm(o); FSEL = null; return again(); }
     if (g && !g.classList.contains('lock')) {   // 服を押すと、その服の あいている欄へ（どちらも うまっていれば おもな センモン）
+      if (o.only && g.dataset.layer !== o.only && o.goLayer) return o.goLayer(g.dataset.layer);   // 1段ずつの ときは、その 段の ページへ
       const k = g.dataset.layer, i = o.get(k, 0) && !o.get(k, 1) ? 1 : 0;
       if (FSEL && FSEL.n) { boardPlace(o, k, i, FSEL.n); FSEL = null; } else FSEL = FSEL && FSEL.k === k ? null : { k, i };
       return again();
@@ -2746,7 +2760,49 @@ function bindBoard(o, redraw) {
   $('#fboard').onmouseover = (e) => { const t = e.target.closest('.gar:not(.lock),.layer[data-k],.cell'); hov(t ? t.dataset.layer || t.dataset.k : null); };
   $('#fboard').onmouseleave = () => hov(null);
 }
-function openForm() { FSEL = null; formSheet(); }
+/* 第2章の フォーメーション：1段ずつ ページを 進める（本人 2026-10-31「段階的に 進められたら」「文字が 少し 多くて 読み取りに 時間が かかりそう」）
+   段（外側 → まん中 → 肌側）→ 依頼ごとの 仕上げ（あれば）→ 理由。段の ページには、その 段に かかわる 依頼メモだけ 出す。
+   はじめの 説明は 1行（くわしくは「くわしく」）。相棒の ひとこと・理由・わざの 説明は そのまま（本人） */
+let FSTEP = null;   // { qk：依頼, i：いまの ページ }
+function stepSheet(c) {
+  const L0 = c.o.layers.filter((L) => !L.lock);
+  const steps = [...L0.map((L) => ({ k: L.k, name: LNAME[L.k], lay: L })), ...(c.extras || []), { k: 'why', name: '理由' }];
+  const done = (x) => (x.lay ? !!c.o.get(x.k, 0) : x.k === 'why' ? c.reason() != null : !x.done || x.done());
+  if (!FSTEP || FSTEP.qk !== c.qk) { const f = steps.findIndex((x) => !done(x)); FSTEP = { qk: c.qk, i: f < 0 ? 0 : f }; }
+  const i = Math.min(FSTEP.i, steps.length - 1), st = steps[i], reach = (j) => j <= i || steps.slice(0, j).every(done);
+  const go = (j) => { if (j < 0) return; FSTEP.i = j; FSEL = null; c.redraw(); $('#sheet').scrollTop = 0; };
+  const ob = Object.assign({}, c.o, { only: st.lay ? st.k : null, goLayer: (k) => go(steps.findIndex((x) => x.k === k)) });
+  const bar = `<div class="fsteps">${steps.map((x, j) => `<button class="fst${j === i ? ' now' : done(x) ? ' did' : ''}" data-st="${j}"${reach(j) ? '' : ' disabled'}>${'①②③④⑤⑥'[j]} ${x.name}${done(x) && j !== i ? '<span class="material-symbols-outlined" aria-hidden="true">check</span>' : ''}</button>`).join('<span class="farr" aria-hidden="true">→</span>')}</div>`;
+  const memoFor = (k) => c.memo.filter((m) => m.lay && [].concat(m.lay).includes(k)).map((m) => m.t);
+  const memoBox = (list) => `<div class="memo fmemo1"><b>依頼メモ</b><br>${list.length ? list.map((m) => `・${gl(m)}`).join('<br>') : '<span class="sub" style="margin:0">この 段に かかわる ことは、まだ 聞いていない（聞き込みで 聞けるかも）</span>'}</div>`;
+  const notes = (k) => c.notes.filter((n) => !k || n.includes(LNAME[k]));
+  const noteP = (list) => (list.length ? `<p class="sub" style="margin:6px 0 0">${list.map(gl).join('<br>')}</p>` : '');
+  let body;
+  if (st.lay) body = `<p class="fnow">${LNAME[st.k]}に 置く センモンを えらぼう<small>${gl(st.lay.what)}</small></p>${memoBox(memoFor(st.k))}${boardHtml(ob)}${noteP(notes(st.k))}`;
+  else if (st.k === 'why') body = `<p class="fnow">この 組み方に した 理由を 1つ えらぼう</p>
+    <div class="reasons">${c.reasons.map((r, j) => `<label><input type="radio" name="rs" value="${j}"${c.reason() === j ? ' checked' : ''}> <span>${gl(r.t)}</span></label>`).join('')}</div>
+    <p class="fnow" style="margin-top:12px">いまの 組み方</p>
+    <div class="fsum"><div class="fsumt">${torsoSvg(ob)}</div><div class="fsumr">${L0.map((L) => { const A = c.o.get(L.k, 0) && byName(c.o.get(L.k, 0)), B = c.o.get(L.k, 1) && byName(c.o.get(L.k, 1));
+      return `<p><b>${LNAME[L.k]}</b>　${A ? `${swName(A)}（${A.fib}${B ? ` 65%）＋ ${swName(B)}（${B.fib} 35%）` : '）'}` : '（あき）'}</p>`; }).join('')}${noteP(c.notes)}${c.whyExtra ? c.whyExtra() : ''}</div></div>
+    ${memoHtml(c.memo.map((m) => m.t))}`;
+  else body = `<p class="fnow">${gl(st.lead)}</p>${memoBox(memoFor(st.k))}${st.html()}`;
+  const back = i ? '<button id="bPrev">もどる</button>' : '';
+  const foot = st.k === 'why' ? footHtml(c.need(), `<button id="bClose">とじる</button><button id="bTalk">① 聞き込み</button>${back}<button class="main" id="bTrip"${c.need().length ? ' disabled' : ''}>${c.tripLabel}</button>`)
+    : `<div class="sfoot"><p class="need${done(st) ? ' ok' : ''}">${done(st) ? '<span class="material-symbols-outlined" aria-hidden="true">check_circle</span><span>できた！ つぎへ 進もう</span>'
+      : `<span class="material-symbols-outlined" aria-hidden="true">pending</span><span>${st.lay ? `${LNAME[st.k]}に おもな センモンを 置くと、つぎへ 進める` : st.wait || 'えらぶと、つぎへ 進める'}</span>`}</p>
+      <div class="row"><button id="bClose">とじる</button><button id="bTalk">① 聞き込み</button>${back}<button class="main" id="bNextSt"${done(st) ? '' : ' disabled'}>つぎへ：${steps[i + 1].name}</button></div></div>`;
+  openSheet(`<h2>② フォーメーション：${c.name}</h2><div class="sub flead">${gl(c.lead)}<details class="fmore"><summary>くわしく</summary>${gl(c.more)}</details></div>${bar}${i === 0 && c.ai ? c.ai : ''}${body}${foot}`, true);
+  $('#sheet').querySelectorAll('[data-st]').forEach((b) => (b.onclick = () => go(+b.dataset.st)));
+  if (st.lay) bindBoard(ob, c.redraw);
+  if (st.k === 'why') { bindMemo(); $('#sheet').querySelectorAll('input[name=rs]').forEach((r) => (r.onchange = () => { c.setReason(+r.value); setNeed(c.need()); })); $('#bTrip').onclick = c.onTrip; }
+  else { if (st.bind) st.bind(); $('#bNextSt').onclick = () => go(i + 1); }
+  if ($('#bPrev')) $('#bPrev').onclick = () => go(i - 1);
+  $('#bTalk').onclick = c.onTalk; $('#bClose').onclick = closeSheet;
+  if (c.after) c.after(st.k);
+}
+const keepStep = (k, name, lead, list, get, set) => ({ k, name, lead, html: () => `<div class="reasons">${list.map((t, i) => `<label><input type="radio" name="kp" value="${i}"${get() === i ? ' checked' : ''}> ${gl(t)}</label>`).join('')}</div>`,
+  bind: () => $('#sheet').querySelectorAll('input[name=kp]').forEach((r) => (r.onchange = () => set(+r.value))) });
+function openForm() { FSEL = null; FSTEP = null; formSheet(); }
 function formSheet() {
   const q = S.q; if (q.stage < 1 || q.stage === 3) q.stage = 1; renderQuest();
   const ev = evalForm(), ready = !!(ev.oL && ev.sL);
@@ -2756,22 +2812,14 @@ function formSheet() {
       { k: 'skin', what: '中に 着る服（肌に ふれる）', see: [2, 3], need: { 2: 3 }, res: { 2: ev.sweat, 3: ev.dry } }],
     get: (k, i) => S.form[k][i], set: (k, i, n) => { S.form[k][i] = n; }, hand: [1, 2, 3] };
   const need = () => [!ready && '外側と肌側に おもな センモンを 置く', q.reason == null && '理由を 1つ えらぶ'].filter(Boolean);
-  const memo = [QUEST.memo0, ...(q.appraised ? ['晴れ着の布は 絹（日光で黄ばむ）'] : []), ...ASKS.filter((x) => q.found.includes(x.id)).map((x) => x.memo + (q.asked.includes(x.id) ? '' : '（旅でわかった）'))];
-  openSheet(`<h2>② フォーメーション：${QUEST.name}</h2><p class="sub">${gl('おばあさんの服を 仕立てる。肌に ふれる布の上に、布を 重ねて着る（重ね着）。1まいの布に、2つの センモンを まぜても よい（混用）')}</p>
-    ${memoHtml(memo)}
-    ${boardHtml(o)}
-    ${ev.notes.length ? `<p class="sub" style="margin:6px 0 0">${ev.notes.map(gl).join('<br>')}</p>` : ''}
-    <div class="colorrow"><canvas id="wheel" width="132" height="132"></canvas><div>布の色（おもな センモンの色）<br>外側 ${swName(ev.oL)}${ev.oL ? `（${HUE_NAME[ev.oL.hue]}）` : ''}　肌側 ${swName(ev.sL)}${ev.sL ? `（${HUE_NAME[ev.sL.hue]}）` : ''}<br>${ev.diff == null ? '外側と肌側に おもな センモンを 置くと、色相環で 見られる' : `色相環で <b>${colorWord(ev.diff)}</b>`}<br><small style="color:#5a6582">${gl('類似＝色相環で となりあう色（同じ色も）。対照＝向かい合う色（教科書 pp.204-205）')}</small></div></div>
-    ${q.asked.includes('dear') ? `<p style="margin:10px 0 4px;font-size:14px"><b>思い出の晴れ着の布</b>（黄ばんでいない所を使う）</p>
-    <div class="reasons">${KEEP.map((k, i) => `<label><input type="radio" name="kp" value="${i}"${q.keep === i ? ' checked' : ''}> ${gl(k)}</label>`).join('')}</div>` : ''}
-    <p style="margin:10px 0 4px;font-size:14px"><b>この組み方にした理由</b>（1つ選ぶ）</p>
-    <div class="reasons">${REASONS.map((r, i) => `<label><input type="radio" name="rs" value="${i}"${q.reason === i ? ' checked' : ''}> <span>${gl(r.t)}</span></label>`).join('')}</div>
-    ${footHtml(need(), `<button id="bClose">とじる</button><button id="bTalk">① 聞き込み</button><button class="main" id="bTrip"${need().length ? ' disabled' : ''}>③ この服で 式の日へ（旅）</button>`)}`, true);
-  bindBoard(o, formSheet); bindMemo();
-  drawWheel($('#wheel'), ev.oL ? ev.oL.hue : null, ev.sL ? ev.sL.hue : null);
-  $('#sheet').querySelectorAll('input[name=kp]').forEach((r) => (r.onchange = () => { q.keep = +r.value; }));
-  $('#sheet').querySelectorAll('input[name=rs]').forEach((r) => (r.onchange = () => { q.reason = +r.value; setNeed(need()); }));
-  $('#bTrip').onclick = openTrip; $('#bTalk').onclick = openTalk; $('#bClose').onclick = closeSheet;
+  const LAY = { sit: 'out', hot: 'skin', wind: 'skin', color: ['out', 'skin'], dear: 'keep' };   // 依頼メモを 出す 段
+  const memo = [{ t: QUEST.memo0 }, ...(q.appraised ? [{ t: '晴れ着の布は 絹（日光で黄ばむ）', lay: 'keep' }] : []), ...ASKS.filter((x) => q.found.includes(x.id)).map((x) => ({ t: x.memo + (q.asked.includes(x.id) ? '' : '（旅でわかった）'), lay: LAY[x.id] }))];
+  stepSheet({ qk: 'iwai', name: QUEST.name, lead: 'おばあさんの 服を、1段ずつ 仕立てよう。', more: 'おばあさんの服を 仕立てる。肌に ふれる布の上に、布を 重ねて着る（重ね着）。1まいの布に、2つの センモンを まぜても よい（混用）',
+    o, memo, notes: ev.notes, need, reasons: REASONS, reason: () => q.reason, setReason: (v) => { q.reason = v; },
+    extras: q.asked.includes('dear') ? [keepStep('keep', '晴れ着の布', '思い出の晴れ着の布（黄ばんでいない所を使う）を、どう 生かす？', KEEP, () => q.keep, (v) => { q.keep = v; })] : [],
+    whyExtra: () => `<div class="colorrow"><canvas id="wheel" width="132" height="132"></canvas><div>布の色（おもな センモンの色）<br>外側 ${swName(ev.oL)}${ev.oL ? `（${HUE_NAME[ev.oL.hue]}）` : ''}　肌側 ${swName(ev.sL)}${ev.sL ? `（${HUE_NAME[ev.sL.hue]}）` : ''}<br>${ev.diff == null ? '外側と肌側に おもな センモンを 置くと、色相環で 見られる' : `色相環で <b>${colorWord(ev.diff)}</b>`}<br><small style="color:#5a6582">${gl('類似＝色相環で となりあう色（同じ色も）。対照＝向かい合う色（教科書 pp.204-205）')}</small></div></div>`,
+    after: (k) => { if (k === 'why') drawWheel($('#wheel'), ev.oL ? ev.oL.hue : null, ev.sL ? ev.sL.hue : null); },
+    tripLabel: '③ この服で 式の日へ（旅）', onTrip: openTrip, onTalk: openTalk, redraw: formSheet });
 }
 function openTrip() {
   const q = S.q, ev = evalForm(), ch = { photo: null, rest: null }; q.stage = 2; q.tries++; renderQuest();
@@ -4635,7 +4683,7 @@ function openYTalk() {
   $('#sheet').querySelectorAll('[data-a]').forEach((b) => (b.onclick = () => { const id = b.dataset.a; y.asked.push(id); if (!y.found.includes(id)) y.found.push(id); renderQuest(); openYTalk(); }));
   $('#bToForm').onclick = openYForm; $('#bClose').onclick = closeSheet;
 }
-function openYForm() { FSEL = null; S.story.c2act = 'yuki'; yFormSheet(); }
+function openYForm() { FSEL = null; FSTEP = null; S.story.c2act = 'yuki'; yFormSheet(); }
 function yFormSheet() {
   const y = S.y; if (y.stage < 1 || y.stage === 3) y.stage = 1; renderQuest();
   const ev = yEval(), ready = !!(ev.oL && ev.mL && ev.sL);
@@ -4645,21 +4693,13 @@ function yFormSheet() {
       { k: 'skin', what: '肌着（肌に ふれる）', see: [2, 3], need: { 3: 3 }, res: { 2: ev.sweat, 3: ev.sdry } }],
     get: (k, i) => S.yform[k][i], set: (k, i, n) => { S.yform[k][i] = n; }, hand: [0, 2, 3, 4] };
   const need = () => [!ready && '肌側・まん中・外側に おもな センモンを 置く', y.reason == null && '理由を 1つ えらぶ'].filter(Boolean);
-  const memo = [YQ.memo0, ...(y.checked ? ['セーターは 毛 100%。もみ洗いで 縮んだ'] : []), ...Y_ASKS.filter((x) => y.found.includes(x.id)).map((x) => x.memo + (y.asked.includes(x.id) ? '' : '（旅で わかった）'))];
-  openSheet(`<h2>② フォーメーション：${YQ.name}</h2><p class="sub">${gl('ゆうびん屋さんの 服を 仕立てる。きょうは まん中の 段も ひらく。肌着・セーター・上着の 3まいを 重ねて着る（重ね着）')}</p>
-    ${lnHtml(ai({ meja: 'シュルルッ……3段 ぜんぶ 使うよ！ 段ごとに、見る 所が ちがうね。', pinko: 'チクッ！ 3まい 重ねるんだ！ どの 段に だれを 置くか、ピンで とめるみたいに 決めよう！', iro: 'シュー……3まい 重ねるんだね。段ごとの 役目を 考えよう。' }))}
-    ${memoHtml(memo)}
-    ${boardHtml(o)}
-    ${ev.notes.length ? `<p class="sub" style="margin:6px 0 0">${ev.notes.map(gl).join('<br>')}</p>` : ''}
-    ${y.asked.includes('love') ? `<p style="margin:10px 0 4px;font-size:14px"><b>子どもたちが 編んだ セーター</b>（縮んで もう 着られない）</p>
-    <div class="reasons">${Y_KEEP.map((k, i) => `<label><input type="radio" name="kp" value="${i}"${y.keep === i ? ' checked' : ''}> ${gl(k)}</label>`).join('')}</div>` : ''}
-    <p style="margin:10px 0 4px;font-size:14px"><b>この組み方にした理由</b>（1つ選ぶ）</p>
-    <div class="reasons">${Y_REASONS.map((r, i) => `<label><input type="radio" name="rs" value="${i}"${y.reason === i ? ' checked' : ''}> <span>${gl(r.t)}</span></label>`).join('')}</div>
-    ${footHtml(need(), `<button id="bClose">とじる</button><button id="bTalk">① 聞き込み</button><button class="main" id="bTrip"${need().length ? ' disabled' : ''}>③ この服で 峠へ（旅）</button>`)}`, true);
-  bindBoard(o, yFormSheet); bindMemo();
-  $('#sheet').querySelectorAll('input[name=kp]').forEach((r) => (r.onchange = () => { y.keep = +r.value; }));
-  $('#sheet').querySelectorAll('input[name=rs]').forEach((r) => (r.onchange = () => { y.reason = +r.value; setNeed(need()); }));
-  $('#bTrip').onclick = openYTrip; $('#bTalk').onclick = openYTalk; $('#bClose').onclick = closeSheet;
+  const LAY = { rock: 'out', snow: 'out', wait: 'mid', climb: 'skin', love: 'keep' };   // 依頼メモを 出す 段
+  const memo = [{ t: YQ.memo0 }, ...(y.checked ? [{ t: 'セーターは 毛 100%。もみ洗いで 縮んだ', lay: 'mid' }] : []), ...Y_ASKS.filter((x) => y.found.includes(x.id)).map((x) => ({ t: x.memo + (y.asked.includes(x.id) ? '' : '（旅で わかった）'), lay: LAY[x.id] }))];
+  stepSheet({ qk: 'yuki', name: YQ.name, lead: 'ゆうびん屋さんの 服を、1段ずつ 仕立てよう（きょうは まん中も）。', more: 'ゆうびん屋さんの 服を 仕立てる。きょうは まん中の 段も ひらく。肌着・セーター・上着の 3まいを 重ねて着る（重ね着）',
+    ai: lnHtml(ai({ meja: 'シュルルッ……3段 ぜんぶ 使うよ！ 段ごとに、見る 所が ちがうね。', pinko: 'チクッ！ 3まい 重ねるんだ！ どの 段に だれを 置くか、ピンで とめるみたいに 決めよう！', iro: 'シュー……3まい 重ねるんだね。段ごとの 役目を 考えよう。' })),
+    o, memo, notes: ev.notes, need, reasons: Y_REASONS, reason: () => y.reason, setReason: (v) => { y.reason = v; },
+    extras: y.asked.includes('love') ? [keepStep('keep', 'セーター', '子どもたちが 編んだ セーター（縮んで もう 着られない）を、どう する？', Y_KEEP, () => y.keep, (v) => { y.keep = v; })] : [],
+    tripLabel: '③ この服で 峠へ（旅）', onTrip: openYTrip, onTalk: openYTalk, redraw: yFormSheet });
 }
 function openYTrip() {
   const y = S.y, ev = yEval(), ch = { heat: null }; y.stage = 2; y.tries++; renderQuest();
@@ -4848,7 +4888,7 @@ function kitsukeGuildDone(pic) {   // ギルド版の あと：教室で 実物�
     <div class="row"><button class="main" id="bPick">${c2Any() ? 'ツムギに 報告する' : '町の依頼を えらぶ'}</button></div>`, true);
   $('#bPick').onclick = openTsumugiC2; $('#bPick').focus();
 }
-function openMForm() { FSEL = null; S.story.c2act = 'matsuri'; if (!S.m.kitsuke) return openMKitsuke(false); mFormSheet(); }
+function openMForm() { FSEL = null; FSTEP = null; S.story.c2act = 'matsuri'; if (!S.m.kitsuke) return openMKitsuke(false); mFormSheet(); }
 function mFormSheet() {
   const m = S.m; if (m.stage < 1 || m.stage === 3) m.stage = 1; renderQuest();
   const ev = mEval(), ready = !!(ev.oL && ev.sL);
@@ -4858,21 +4898,13 @@ function mFormSheet() {
       { k: 'skin', what: '肌着（ゆかたの 下に 着る）', see: [2, 3], need: { 2: 3 }, res: { 2: ev.sweat, 3: ev.sdry } }],
     get: (k, i) => S.mform[k][i], set: (k, i, n) => { S.mform[k][i] = n; }, hand: [1, 2, 3, 4], yukata: 'R' };
   const need = () => [!ready && '外側と肌側に おもな センモンを 置く', m.reason == null && '理由を 1つ えらぶ'].filter(Boolean);
-  const memo = [MQ.memo0, 'ゆかたは 右前（右の 身ごろが 先・左が 上）', ...M_ASKS.filter((x) => m.found.includes(x.id)).map((x) => x.memo + (m.asked.includes(x.id) ? '' : '（旅で わかった）'))];
-  openSheet(`<h2>② フォーメーション：${MQ.name}</h2><p class="sub">${gl('ヒナタの ゆかたを 仕立てる。外側＝ゆかた、肌側＝肌着（ゆかたの 下に 着る）。まん中は 使わない。1まいの布に、2つの センモンを まぜても よい（混用）')}</p>
-    ${lnHtml(ai({ meja: 'シュルルッ……夏の 夕方から 夜までの 祭りだね。場面ごとに、見る 所を はかろう！', pinko: 'チクッ！ 夏祭りの 1日を 思いうかべて、ゆかたと 肌着を 決めよう！', iro: 'シュー……暑い 日の ゆかた。あたたかすぎない ほうが いいかもね。' }))}
-    ${memoHtml(memo)}
-    ${boardHtml(o)}
-    ${ev.notes.length ? `<p class="sub" style="margin:6px 0 0">${ev.notes.map(gl).join('<br>')}</p>` : ''}
-    ${m.asked.includes('baa') ? `<p style="margin:10px 0 4px;font-size:14px"><b>おばあちゃんの ゆかた</b>（小さくて もう 着られない）</p>
-    <div class="reasons">${M_KEEP.map((k, i) => `<label><input type="radio" name="kp" value="${i}"${m.keep === i ? ' checked' : ''}> ${gl(k)}</label>`).join('')}</div>` : ''}
-    <p style="margin:10px 0 4px;font-size:14px"><b>この組み方にした理由</b>（1つ選ぶ）</p>
-    <div class="reasons">${M_REASONS.map((r, i) => `<label><input type="radio" name="rs" value="${i}"${m.reason === i ? ' checked' : ''}> <span>${gl(r.t)}</span></label>`).join('')}</div>
-    ${footHtml(need(), `<button id="bClose">とじる</button><button id="bTalk">① 聞き込み</button><button class="main" id="bTrip"${need().length ? ' disabled' : ''}>③ この ゆかたで 夏祭りへ（旅）</button>`)}`, true);
-  bindBoard(o, mFormSheet); bindMemo();
-  $('#sheet').querySelectorAll('input[name=kp]').forEach((r) => (r.onchange = () => { m.keep = +r.value; }));
-  $('#sheet').querySelectorAll('input[name=rs]').forEach((r) => (r.onchange = () => { m.reason = +r.value; setNeed(need()); }));
-  $('#bTrip').onclick = openMTrip; $('#bTalk').onclick = openMTalk; $('#bClose').onclick = closeSheet;
+  const LAY = { hot: 'out', yatai: 'out', odori: 'skin', hanabi: 'skin', baa: 'keep' };   // 依頼メモを 出す 段
+  const memo = [{ t: MQ.memo0 }, { t: 'ゆかたは 右前（右の 身ごろが 先・左が 上）', lay: 'out' }, ...M_ASKS.filter((x) => m.found.includes(x.id)).map((x) => ({ t: x.memo + (m.asked.includes(x.id) ? '' : '（旅で わかった）'), lay: LAY[x.id] }))];
+  stepSheet({ qk: 'matsuri', name: MQ.name, lead: 'ヒナタの ゆかたと 肌着を、1段ずつ 仕立てよう。', more: 'ヒナタの ゆかたを 仕立てる。外側＝ゆかた、肌側＝肌着（ゆかたの 下に 着る）。まん中は 使わない。1まいの布に、2つの センモンを まぜても よい（混用）',
+    ai: lnHtml(ai({ meja: 'シュルルッ……夏の 夕方から 夜までの 祭りだね。場面ごとに、見る 所を はかろう！', pinko: 'チクッ！ 夏祭りの 1日を 思いうかべて、ゆかたと 肌着を 決めよう！', iro: 'シュー……暑い 日の ゆかた。あたたかすぎない ほうが いいかもね。' })),
+    o, memo, notes: ev.notes, need, reasons: M_REASONS, reason: () => m.reason, setReason: (v) => { m.reason = v; },
+    extras: m.asked.includes('baa') ? [keepStep('keep', 'おばあちゃんの ゆかた', 'おばあちゃんの ゆかた（小さくて もう 着られない）を、どう する？', M_KEEP, () => m.keep, (v) => { m.keep = v; })] : [],
+    tripLabel: '③ この ゆかたで 夏祭りへ（旅）', onTrip: openMTrip, onTalk: openMTalk, redraw: mFormSheet });
 }
 function openMTrip() {
   const m = S.m, ev = mEval(), ch = { fan: null }; m.stage = 2; m.tries++; renderQuest();
@@ -5031,7 +5063,7 @@ function openHTalk() {
   $('#sheet').querySelectorAll('[data-a]').forEach((b) => (b.onclick = () => { const id = b.dataset.a; h.asked.push(id); if (!h.found.includes(id)) h.found.push(id); renderQuest(); openHTalk(); }));
   $('#bNext').onclick = openHForm; $('#bClose').onclick = closeSheet;
 }
-function openHForm() { FSEL = null; S.story.c2act = 'minato'; hFormSheet(); }
+function openHForm() { FSEL = null; FSTEP = null; S.story.c2act = 'minato'; hFormSheet(); }
 function hFormSheet() {
   const h = S.h; if (h.stage < 1 || h.stage === 3) h.stage = 1; renderQuest();
   const ev = hEval(), ready = !!(ev.oL && ev.sL);
@@ -5041,27 +5073,23 @@ function hFormSheet() {
       { k: 'skin', what: 'Tシャツ（はっぴの 下に 着る）', see: [2], need: { 2: 3 }, res: { 2: ev.sweat } }],
     get: (k, i) => S.hform[k][i], set: (k, i, n) => { S.hform[k][i] = n; }, hand: [0, 2, 3] };
   const need = () => [!ready && '外側と肌側に おもな センモンを 置く', h.mark == null && '背中の 印を えらぶ', h.eri == null && 'えりの 色を えらぶ', h.reason == null && '理由を 1つ えらぶ'].filter(Boolean);
-  const memo = [HQ.memo0, ...H_ASKS.filter((x) => h.found.includes(x.id)).map((x) => x.memo + (h.asked.includes(x.id) ? '' : '（旅で わかった）'))];
-  openSheet(`<h2>② フォーメーション：${HQ.name}</h2><p class="sub">${gl('ナギの はっぴを 仕立てる。外側＝はっぴ、肌側＝Tシャツ（はっぴの 下に 着る）。まん中は 使わない。1まいの布に、2つの センモンを まぜても よい（混用）')}</p>
-    ${lnHtml(ai({ meja: 'シュルルッ……舟の 上は、水しぶきと 汗。場面ごとに、見る 所を はかろう！', pinko: 'チクッ！ 大会の 1日を 思いうかべて、はっぴと Tシャツを 決めよう！', iro: 'シュー……ぬれても だいじょうぶな 布が いいかもね。' }))}
-    ${memoHtml(memo)}
-    ${boardHtml(o)}
-    ${ev.notes.length ? `<p class="sub" style="margin:6px 0 0">${ev.notes.map(gl).join('<br>')}</p>` : ''}
-    <div class="shiage"><p style="margin:0 0 6px;font-size:14px"><b>仕上げ：服で 伝える</b>　この はっぴを 見た 人に、何が 伝わるかな？</p>
-      <div class="shrow"><div class="shpic">${happiSvg(ev.oL ? ev.oL.hue : null, h.eri, h.mark)}</div>
+  const LAY = { oar: 'out', wind: 'out', row: 'skin', team: 'fin', family: 'fin', eri: 'fin', feel: 'fin' };   // 依頼メモを 出す 段
+  const memo = [{ t: HQ.memo0 }, ...H_ASKS.filter((x) => h.found.includes(x.id)).map((x) => ({ t: x.memo + (h.asked.includes(x.id) ? '' : '（旅で わかった）'), lay: LAY[x.id] }))];
+  const again = () => { const y = $('#sheet').scrollTop; hFormSheet(); $('#sheet').scrollTop = y; };
+  const fin = { k: 'fin', name: '仕上げ', lead: '仕上げ：この はっぴを 見た 人に、何が 伝わるかな？', wait: '背中の 印と、えりの 色を えらぶと、つぎへ 進める', done: () => h.mark != null && h.eri != null,
+    html: () => `<div class="shiage"><div class="shrow"><div class="shpic">${happiSvg(ev.oL ? ev.oL.hue : null, h.eri, h.mark)}</div>
       <div class="shopt"><p class="lab">背中の 印</p><div class="reasons">${H_MARKS.map(([k, t]) => `<label><input type="radio" name="mk" value="${k}"${h.mark === k ? ' checked' : ''}> <span>${t}</span></label>`).join('')}</div>
         <p class="lab">えりの 色（色相環の 12色）</p><div class="hues">${Array.from({ length: 12 }, (_, i) => `<button data-eri="${i}" class="${h.eri === i ? 'pick' : ''}" style="background:${hueCss(i)}" aria-label="${HUE_NAME[i]}" title="${HUE_NAME[i]}"></button>`).join('')}</div>
-        <div class="colorrow"><canvas id="wheel" width="132" height="132"></canvas><div>はっぴ ${swName(ev.oL)}${ev.oL ? `（${HUE_NAME[ev.oL.hue]}）` : ''}<br>えり ${h.eri == null ? '（まだ）' : `<span class="sw" style="background:${hueCss(h.eri)}"></span>${HUE_NAME[h.eri]}`}<br>${ev.diff == null ? '外側に センモンを 置いて、えりの 色を えらぶと、色相環で 見られる' : `色相環で <b>${colorWord(ev.diff)}</b>`}<br><small style="color:#5a6582">${gl('類似＝色相環で となりあう色（同じ色も）。対照＝向かい合う色（教科書 pp.204-205）')}</small></div></div></div></div></div>
-    <p style="margin:10px 0 4px;font-size:14px"><b>この組み方にした理由</b>（1つ選ぶ）</p>
-    <div class="reasons">${H_REASONS.map((r, i) => `<label><input type="radio" name="rs" value="${i}"${h.reason === i ? ' checked' : ''}> <span>${gl(r.t)}</span></label>`).join('')}</div>
-    ${footHtml(need(), `<button id="bClose">とじる</button><button id="bTalk">① 聞き込み</button><button class="main" id="bTrip"${need().length ? ' disabled' : ''}>③ この はっぴで 舟こぎ大会へ（旅）</button>`)}`, true);
-  bindBoard(o, hFormSheet); bindMemo();
-  drawWheel($('#wheel'), ev.oL ? ev.oL.hue : null, h.eri, ['外', 'え']);
-  const again = () => { const y = $('#sheet').scrollTop; hFormSheet(); $('#sheet').scrollTop = y; };
-  $('#sheet').querySelectorAll('input[name=mk]').forEach((r) => (r.onchange = () => { h.mark = r.value; again(); }));
-  $('#sheet').querySelectorAll('[data-eri]').forEach((b) => (b.onclick = () => { h.eri = +b.dataset.eri; again(); }));
-  $('#sheet').querySelectorAll('input[name=rs]').forEach((r) => (r.onchange = () => { h.reason = +r.value; setNeed(need()); }));
-  $('#bTrip').onclick = openHTrip; $('#bTalk').onclick = openHTalk; $('#bClose').onclick = closeSheet;
+        <div class="colorrow"><canvas id="wheel" width="132" height="132"></canvas><div>はっぴ ${swName(ev.oL)}${ev.oL ? `（${HUE_NAME[ev.oL.hue]}）` : ''}<br>えり ${h.eri == null ? '（まだ）' : `<span class="sw" style="background:${hueCss(h.eri)}"></span>${HUE_NAME[h.eri]}`}<br>${ev.diff == null ? '外側に センモンを 置いて、えりの 色を えらぶと、色相環で 見られる' : `色相環で <b>${colorWord(ev.diff)}</b>`}<br><small style="color:#5a6582">${gl('類似＝色相環で となりあう色（同じ色も）。対照＝向かい合う色（教科書 pp.204-205）')}</small></div></div></div></div></div>`,
+    bind: () => {
+      $('#sheet').querySelectorAll('input[name=mk]').forEach((r) => (r.onchange = () => { h.mark = r.value; again(); }));
+      $('#sheet').querySelectorAll('[data-eri]').forEach((b) => (b.onclick = () => { h.eri = +b.dataset.eri; again(); }));
+    } };
+  stepSheet({ qk: 'minato', name: HQ.name, lead: 'ナギの はっぴと Tシャツを 1段ずつ 仕立てて、仕上げよう。', more: 'ナギの はっぴを 仕立てる。外側＝はっぴ、肌側＝Tシャツ（はっぴの 下に 着る）。まん中は 使わない。1まいの布に、2つの センモンを まぜても よい（混用）。さいごに、背中の 印と えりの 色を えらぶ（仕上げ）',
+    ai: lnHtml(ai({ meja: 'シュルルッ……舟の 上は、水しぶきと 汗。場面ごとに、見る 所を はかろう！', pinko: 'チクッ！ 大会の 1日を 思いうかべて、はっぴと Tシャツを 決めよう！', iro: 'シュー……ぬれても だいじょうぶな 布が いいかもね。' })),
+    o, memo, notes: ev.notes, need, reasons: H_REASONS, reason: () => h.reason, setReason: (v) => { h.reason = v; },
+    extras: [fin], after: (k) => { if (k === 'fin') drawWheel($('#wheel'), ev.oL ? ev.oL.hue : null, h.eri, ['外', 'え']); },
+    tripLabel: '③ この はっぴで 舟こぎ大会へ（旅）', onTrip: openHTrip, onTalk: openHTalk, redraw: hFormSheet });
 }
 function openHTrip() {
   const h = S.h, ev = hEval(), ch = { sode: null }; h.stage = 2; h.tries++; renderQuest();
