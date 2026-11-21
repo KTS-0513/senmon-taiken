@@ -1565,6 +1565,137 @@ function sparkle(g, x, y, s) {
 
 return { ase: (m) => { SEED = 11; return aAse(m); }, abura: (m) => { SEED = 23; return aAbu(m); } };
 })();
+/* ===== ヤブレ族（第3章の おわり・針と糸の わざ）── 三面図-ヤブレ族.html の 案A「そのものが 妖精」（本人 2026-11-21 決定）。描き方は 三面図と 同じ（直すときは 両方）
+   いたずら中＝あっかんべーの 顔・くすんだ 色／直ったら＝直す わざが 見える 形（布に もどる・かがられる・すそが 折り上がる）と 明るい 色・笑顔 ===== */
+const YABU3D = (() => {
+const C = { ai: 0x2e3a59, white: 0xffffff, momo: 0xf2a7a0, cloth: 0xfbf8ef, mouth: 0x5a2f2a, tongue: 0xe8857a, ito: 0xf1ead6, navy: 0x4a5878, shirt: 0xdbe6f3 };
+const PAL = {
+  btn: { yabure: { body: 0xb8684e, dark: 0x8c4a36 }, naotta: { body: 0xef7d5f, dark: 0xc95a3f } },
+  hot: { yabure: { body: 0x8193ad, dark: 0x5f708a, ito: 0xa9b6c9 }, naotta: { body: 0x8ec3ee, dark: 0x5f9bd0, ito: 0xbfe0fa } },
+  suso: { yabure: { body: 0x96849f, dark: 0x6f5f7a }, naotta: { body: 0xbb9fe3, dark: 0x8f72c2 } },
+};
+const pal = (k, mode) => PAL[k][mode === 'naotta' ? 'naotta' : 'yabure'];
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+function mat(c, o = {}) { return new THREE.MeshStandardMaterial({ color: c, roughness: o.r ?? 0.92, metalness: 0, transparent: o.op != null, opacity: o.op ?? 1 }); }
+function M(geo, c, g, o) { const m = new THREE.Mesh(geo, mat(c, o)); g.add(m); return m; }
+function stitchPoly(g, pts, closed, step = 0.11, color = C.ai) {
+  const geo = new THREE.BoxGeometry(0.022, 0.022, 0.07), m = mat(color), n = closed ? pts.length : pts.length - 1;
+  for (let i = 0; i < n; i++) { const a = pts[i], b = pts[(i + 1) % pts.length], k = Math.max(1, Math.round(a.distanceTo(b) / step));
+    for (let j = 0; j < k; j += 2) { const s = new THREE.Mesh(geo, m); s.position.copy(a.clone().lerp(b, (j + 0.5) / k)); s.lookAt(b); g.add(s); } }
+}
+function tube(g, pts, r, c, o) { return M(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 32, r, 8, false), c, g, o); }
+function feet(g, c, w = 0.22, y = 0.06, z = 0.08, s = 0.13) { [-w, w].forEach((x) => { const f = M(new THREE.SphereGeometry(s, 14, 10), c, g); f.scale.set(1, 0.55, 1.3); f.position.set(x, y, z); }); }
+function face(g, x, y, z, s, mode, o = {}) {
+  const f = new THREE.Group(); f.position.set(x, y, z); f.rotation.set(o.rx || 0, o.ry || 0, 0); f.scale.setScalar(s); g.add(f);
+  const flat = (geo, c, px, py, pz = 0, rz = 0, sx = 1, sy = 1, to = f) => { const m = new THREE.Mesh(geo, mat(c, { r: 0.8 })); m.position.set(px, py, pz); m.rotation.z = rz; m.scale.set(sx, sy, 1); to.add(m); return m; };
+  [-1, 1].forEach((sd) => flat(new THREE.CircleGeometry(0.058, 16), C.momo, 0.3 * sd, -0.05, -0.002));
+  if (mode === 'naotta') {
+    if (o.eyes !== false) [-1, 1].forEach((sd) => { const e = flat(new THREE.CircleGeometry(0.088, 24), C.ai, 0.16 * sd, 0.06);
+      flat(new THREE.CircleGeometry(0.034, 16), C.white, 0.03, 0.03, 0.002, 0, 1, 1, e); flat(new THREE.CircleGeometry(0.016, 12), C.white, -0.03, -0.035, 0.002, 0, 1, 1, e); });
+    flat(new THREE.CircleGeometry(0.08, 20, Math.PI, Math.PI), C.mouth, 0, -0.06, 0.001);
+    flat(new THREE.CircleGeometry(0.046, 16, Math.PI, Math.PI), C.tongue, 0, -0.1, 0.003, 0, 1, 0.8);
+  } else {
+    if (o.eyes !== false) {
+      const e = flat(new THREE.CircleGeometry(0.075, 24), C.ai, 0.16, 0.06); flat(new THREE.CircleGeometry(0.028, 14), C.white, 0.025, 0.025, 0.002, 0, 1, 1, e);
+      const w = new THREE.Mesh(new THREE.TorusGeometry(0.062, 0.02, 6, 18, Math.PI), mat(C.ai)); w.position.set(-0.16, 0.04, 0.002); f.add(w);   // つぶった 目（∩）
+    }
+    flat(new THREE.CircleGeometry(0.085, 20, Math.PI, Math.PI), C.mouth, 0, -0.05, 0.001, 0, 1.1, 0.8);   // 口を あけて
+    const t = flat(new THREE.CircleGeometry(0.048, 18), C.tongue, 0.03, -0.115, 0.004, 0, 0.9, 1.25);   // 舌を ぺろっ
+  }
+  return f;
+}
+function sparkle(g, x, y, s) {
+  const sp = new THREE.Group(); sp.position.set(x, y, 0.2); g.add(sp);
+  [0, Math.PI / 2].forEach((a) => { const b = M(new THREE.BoxGeometry(0.05, s * 2, 0.03), 0xf2c94c, sp); b.rotation.z = a; });
+  [Math.PI / 4, -Math.PI / 4].forEach((a) => { const b = M(new THREE.BoxGeometry(0.035, s * 1.1, 0.03), 0xf2c94c, sp); b.rotation.z = a; });
+}
+function button(g, P, mode, r, o = {}) {
+  const b = new THREE.Group(); g.add(b);
+  const d = M(new THREE.CylinderGeometry(r, r, r * 0.28, 48), P.body, b, { r: 0.35 }); d.rotation.x = Math.PI / 2;
+  [1, -1].forEach((sd) => { const rim = M(new THREE.TorusGeometry(r * 0.9, r * 0.09, 10, 48), P.dark, b, { r: 0.35 }); rim.position.z = sd * r * 0.14; });
+  const hy = r * 0.18, hx = r * 0.3, z = r * 0.145;
+  [-1, 1].forEach((sd) => {   // 穴＝目
+    const h = M(new THREE.CircleGeometry(r * 0.15, 24), C.ai, b); h.position.set(hx * sd, hy, z);
+    if (mode === 'naotta' || sd > 0) { const w = M(new THREE.CircleGeometry(r * 0.055, 12), C.white, b); w.position.set(hx * sd + r * 0.04, hy + r * 0.04, z + 0.002); }
+    const hb = M(new THREE.CircleGeometry(r * 0.15, 24), C.ai, b); hb.position.set(hx * sd, hy, -z); hb.rotation.y = Math.PI;
+  });
+  face(b, 0, -r * 0.2, z + 0.004, r * 1.6, mode, { eyes: false });
+  shine(b, -r * 0.55, r * 0.45, z + 0.01, r * 0.07, r * 0.16, 0.6);
+  return b;
+}
+function shine(g, x, y, z, sx, sy, rz = 0, op = 0.8) { const h = M(new THREE.CircleGeometry(1, 20), C.white, g, { op }); h.scale.set(sx, sy, 1); h.position.set(x, y, z); h.rotation.z = rz; return h; }
+function patch(g, W, H, c, x, y, edge = 'all', z0 = 0) {
+  const p = M(new THREE.BoxGeometry(W, H, 0.05), c, g); p.position.set(x, y, z0);
+  const m = 0.08, z = 0.03 + z0, b = y - H / 2, t = y + H / 2, l = x - W / 2, rr = x + W / 2;
+  const pts = edge === 'all' ? [V(l + m, b + m, z), V(rr - m, b + m, z), V(rr - m, t - m, z), V(l + m, t - m, z)] : [V(l + m, b + 0.02, z), V(l + m, t - m, z), V(rr - m, t - m, z), V(rr - m, b + 0.02, z)];
+  stitchPoly(g, pts, edge === 'all'); stitchPoly(g, pts.map((q) => V(q.x, q.y, z0 - 0.03)), edge === 'all');
+  return p;
+}
+function fray(g, c, xs, y0, z, len, r = 0.035) { xs.forEach((x, i) => tube(g, [V(x, y0, z), V(x + 0.05 * (i % 2 ? 1 : -1), y0 - len * 0.4, z + 0.03), V(x - 0.03 * (i % 2 ? 1 : -1), y0 - len * 0.75, z), V(x + 0.04, y0 - len, z + 0.02)], r, c)); }
+function kagari(g, x0, x1, y, zf, zb, n = 7) { for (let i = 0; i < n; i++) { const x = x0 + (x1 - x0) * (i + 0.5) / n;
+  const a = M(new THREE.BoxGeometry(0.024, 0.15, 0.024), C.ai, g); a.position.set(x, y + 0.04, zf); a.rotation.z = 0.55;
+  const b = M(new THREE.BoxGeometry(0.024, 0.15, 0.024), C.ai, g); b.position.set(x + 0.04, y + 0.04, zb); b.rotation.z = 0.55;
+  const u = M(new THREE.BoxGeometry(0.024, 0.024, Math.abs(zf - zb) + 0.02), C.ai, g); u.position.set(x - 0.02, y - 0.03, (zf + zb) / 2); } }
+
+/* ===== 案A：そのものが 妖精 ===== */
+function aBtn(mode) {
+  const P = pal('btn', mode), g = new THREE.Group();
+  if (mode === 'naotta') {   // 布に もどって、糸足で とまる（ボタンつけ）
+    patch(g, 1.2, 0.5, C.shirt, 0, 0.25);
+    const ashi = M(new THREE.CylinderGeometry(0.07, 0.07, 0.16, 12), C.ito, g); ashi.position.set(0, 0.56, 0.02);
+    [0.53, 0.58].forEach((y) => { const w = M(new THREE.TorusGeometry(0.075, 0.018, 6, 16), C.ito, g); w.rotation.x = Math.PI / 2; w.position.set(0, y, 0.02); });
+    const b = button(g, P, mode, 0.55); b.position.set(0, 1.18, 0.02);
+    sparkle(g, 0.62, 1.6, 0.18); return g;
+  }
+  const b = button(g, P, mode, 0.6); b.position.set(0, 0.78, 0); b.rotation.z = 0.12;   // ころころ 転がる
+  tube(g, [V(-0.18, 0.88, 0.09), V(-0.32, 0.72, 0.16), V(-0.5, 0.5, 0.12), V(-0.62, 0.34, 0.18), V(-0.72, 0.38, 0.22)], 0.025, C.ito);   // 穴から たれる 切れた 糸
+  feet(g, P.dark, 0.22, 0.06, 0.05);
+  return g;
+}
+function aBtn(mode) {
+  const P = pal('btn', mode), g = new THREE.Group();
+  if (mode === 'naotta') {   // 布に もどって、糸足で とまる（ボタンつけ）
+    patch(g, 1.2, 0.5, C.shirt, 0, 0.25);
+    const ashi = M(new THREE.CylinderGeometry(0.07, 0.07, 0.16, 12), C.ito, g); ashi.position.set(0, 0.56, 0.02);
+    [0.53, 0.58].forEach((y) => { const w = M(new THREE.TorusGeometry(0.075, 0.018, 6, 16), C.ito, g); w.rotation.x = Math.PI / 2; w.position.set(0, y, 0.02); });
+    const b = button(g, P, mode, 0.55); b.position.set(0, 1.18, 0.02);
+    sparkle(g, 0.62, 1.6, 0.18); return g;
+  }
+  const b = button(g, P, mode, 0.6); b.position.set(0, 0.78, 0); b.rotation.z = 0.12;   // ころころ 転がる
+  tube(g, [V(-0.18, 0.88, 0.09), V(-0.32, 0.72, 0.16), V(-0.5, 0.5, 0.12), V(-0.62, 0.34, 0.18), V(-0.72, 0.38, 0.22)], 0.025, C.ito);   // 穴から たれる 切れた 糸
+  feet(g, P.dark, 0.22, 0.06, 0.05);
+  return g;
+}
+function aHot(mode) {
+  const P = pal('hot', mode), g = new THREE.Group(), W = 1.05, H = 0.95, base = 0.34, y = base + H / 2;
+  const p = M(new THREE.BoxGeometry(W, H, 0.3), P.body, g); p.position.y = y;
+  const m = 0.08, zf = 0.16, top = base + H - m, sides = [V(-W / 2 + m, base + 0.03, zf), V(-W / 2 + m, top, zf), V(W / 2 - m, top, zf), V(W / 2 - m, base + 0.03, zf)];
+  stitchPoly(g, sides, false, 0.11, P.dark); stitchPoly(g, sides.map((q) => V(q.x, q.y, -zf)), false, 0.11, P.dark);
+  face(g, 0, y + 0.08, zf + 0.002, 1.05, mode);
+  if (mode === 'naotta') { kagari(g, -W / 2 + 0.04, W / 2 - 0.04, base, zf + 0.012, -zf - 0.012); feet(g, P.dark, 0.25, base - 0.2, 0.06, 0.13); sparkle(g, 0.68, 1.45, 0.18); }
+  else { fray(g, P.ito, [-0.36, -0.14, 0.1, 0.33], base, 0.02, 0.32, 0.04);   // ほつれた 糸が 足
+    tube(g, [V(0.45, base + 0.05, 0.08), V(0.66, base + 0.12, 0.2), V(0.8, base + 0.35, 0.18), V(0.74, base + 0.5, 0.1)], 0.035, P.ito); }   // 1本 引っぱり出している
+  return g;
+}
+function aSuso(mode) {   // 小さな ズボン。右の すそが ほどけて たれている（スカートの 形は バケツに 見えたので やめた）
+  const P = pal('suso', mode), g = new THREE.Group();
+  const hip = M(new THREE.CylinderGeometry(0.5, 0.52, 0.55, 40), P.body, g); hip.position.y = 1.12; hip.scale.z = 0.8;
+  const top = M(new THREE.SphereGeometry(0.5, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), P.body, g); top.position.y = 1.39; top.scale.set(1, 0.18, 0.8);
+  const band = M(new THREE.TorusGeometry(0.5, 0.055, 10, 40), P.dark, g); band.rotation.x = Math.PI / 2; band.position.y = 1.4; band.scale.y = 0.8;   // ウエスト
+  const hemAt = mode === 'naotta' ? [0.1, 0.1] : [0.1, 0.3];
+  [-1, 1].forEach((sd, i) => { const y0 = hemAt[i], h = 0.9 - y0;
+    const leg = M(new THREE.CylinderGeometry(0.23, 0.26, h, 28), P.body, g); leg.position.set(0.25 * sd, y0 + h / 2, 0);
+    if (mode === 'naotta' || sd < 0) { const hm = M(new THREE.CylinderGeometry(0.27, 0.27, 0.12, 28), P.dark, g); hm.position.set(0.25 * sd, y0 + 0.06, 0); } });   // 折り上げた すそ
+  face(g, 0, 1.1, 0.42, 1.0, mode);
+  if (mode === 'naotta') sparkle(g, 0.7, 1.55, 0.18);
+  else {   // ほどけて たれた すそ（内側の 色が 見える）＋ 糸
+    const fl = M(new THREE.CylinderGeometry(0.265, 0.33, 0.3, 28, 1, true), P.body, g); fl.position.set(0.25, 0.16, 0); fl.rotation.z = -0.08; fl.material.side = THREE.DoubleSide;
+    tube(g, [V(0.36, 0.06, 0.22), V(0.44, -0.02, 0.3), V(0.4, -0.1, 0.36), V(0.5, -0.14, 0.4)], 0.02, C.ito);
+  }
+  return g;
+}
+return { btn: aBtn, hot: aHot, suso: aSuso };
+})();
 
 /* ===== 2D の絵（あとで生徒の Canva の絵に差しかえる所） ===== */
 // 生徒が 上げた センモンの 絵（data URL）。読みこめたら 3D の 板と 左下の 顔を 描きなおす
@@ -2222,6 +2353,7 @@ function makePortraits() {
     [['tsumugi', TSUMUGI], ['granny', GRANNY], ['post', POST], ['matsuri', MATSURI], ['minato', NAGI]].forEach(([k, o]) => { if (o) PORTRAIT[k] = shot(o.children[0], true); });
     NPCS.forEach((n) => { PORTRAIT[n.userData.key] = shot(n.children[0], true); });
     Object.keys(YOGO).forEach((k) => ['warui', 'sukkiri'].forEach((m) => { PORTRAIT[`yg_${k}_${m}`] = shot(YOGO3D[k](m), false, { cy: 0.46, h: 0.92 }); }));   // ヨゴレン：せりふの 顔・洗いカード
+    Object.keys(YABU).forEach((k) => ['yabure', 'naotta'].forEach((m) => { PORTRAIT[`yb_${k}_${m}`] = shot(YABU3D[k](m), false, { cy: 0.5, h: 1.0 }); }));   // ヤブレ族：せりふの 顔・直す カード
   } catch (e) { console.warn('姿の絵を 描けなかった（文字の しるしで 出す）', e); }
   finally { if (r) { r.dispose(); if (r.forceContextLoss) r.forceContextLoss(); } }
 }
@@ -4146,7 +4278,7 @@ function goToGoal(to, arriveMsg) {   // to＝行き先を えらんだ とき（
 }
 document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('#bGoTo')) goToGoal(); });
 // 物語の場面：せりふを 1つずつ（つぎへ・Enter）。{ scr } は 画面の うごき、{ html } は 絵
-const WHO_C = { 'ツムギ': '#c8553d', 'マトイ': '#8a5a33', 'メジャ丸': '#b8860b', 'ピンコ': '#c2577a', 'アイロ': '#3a7ca5', 'ボロンの手紙': '#7a6fb0', 'アセジミン': '#b08a2e', 'アブラーン': '#b08a2e', 'ボタンポロリ': '#7a6fb0', 'ホツレン': '#7a6fb0', '町の子': '#5f9e3c' };
+const WHO_C = { 'ツムギ': '#c8553d', 'マトイ': '#8a5a33', 'メジャ丸': '#b8860b', 'ピンコ': '#c2577a', 'アイロ': '#3a7ca5', 'ボロンの手紙': '#7a6fb0', 'アセジミン': '#b08a2e', 'アブラーン': '#b08a2e', 'ボタンポロリ': '#7a6fb0', 'ホツレン': '#7a6fb0', 'スソダレ': '#7a6fb0', '町の子': '#5f9e3c' };
 function lnHtml(l, isNew) {
   const nw = isNew ? ' new' : '';
   if (l.scr) return `<p class="scr${nw}"><span class="material-symbols-outlined" aria-hidden="true">movie</span><span>${gl(fill(l.scr))}</span></p>`;
@@ -4155,7 +4287,7 @@ function lnHtml(l, isNew) {
   return `<p class="ln${nw}" style="--c:${WHO_C[l.who] || 'var(--ai)'}"><b>${who}</b>「${gl(fill(l.t))}」</p>`;
 }
 // 話している人の しるし：センモンは 顔、相棒は 道具の しるし、人は 名前の 1文字（新しい アイコンは 描かない）
-const WHO_PT = { 'アセジミン': 'yg_ase_warui', 'アブラーン': 'yg_abura_warui', 'ツムギ': 'tsumugi', 'ギルド長ツムギ': 'tsumugi', 'マトイ': 'matoi', 'ボロン': 'boron', '式典の町のおばあさん': 'granny', 'おばあさん': 'granny', '峠の ゆうびん屋さん': 'post', 'ゆうびん屋さん': 'post', '夏祭りの村の ヒナタ': 'matsuri', 'ヒナタ': 'matsuri', '港町の ナギ': 'minato', 'ナギ': 'minato' };
+const WHO_PT = { 'アセジミン': 'yg_ase_warui', 'アブラーン': 'yg_abura_warui', 'ボタンポロリ': 'yb_btn_yabure', 'ホツレン': 'yb_hot_yabure', 'スソダレ': 'yb_suso_yabure', 'ツムギ': 'tsumugi', 'ギルド長ツムギ': 'tsumugi', 'マトイ': 'matoi', 'ボロン': 'boron', '式典の町のおばあさん': 'granny', 'おばあさん': 'granny', '峠の ゆうびん屋さん': 'post', 'ゆうびん屋さん': 'post', '夏祭りの村の ヒナタ': 'matsuri', 'ヒナタ': 'matsuri', '港町の ナギ': 'minato', 'ナギ': 'minato' };
 const ptImg = (k, bg) => (PORTRAIT[k] ? `<img class="bdg pt" src="${PORTRAIT[k]}" alt="" style="background:${bg}">` : '');
 function badgeHtml(l) {
   if (l.pt && PORTRAIT[l.pt]) return ptImg(l.pt, '#f3ead2');   // その 行だけの 顔（ヨゴレンが きれいに なった 笑顔 など）
@@ -5778,6 +5910,8 @@ const C3_GOAL = { start: 'ギルドの入口の ツムギに 話しかけよう'
   yabure: '洗い場で、走ってきた 町の子の 話を 聞こう（赤い ！）', back: 'ギルドの ツムギに 報告しよう', done: '' };
 const washLearned = () => S.ch.done.includes(4) || ['suiri', 'twist', 'yabure', 'back', 'done'].includes(S.story.c3);
 const matoiGone = () => !(S.ch.done.includes(7) || S.story.c7 === 'gate') && (S.ch.done.includes(4) || ['yabure', 'back', 'done'].includes(S.story.c3));   // エピローグの 門で もどってくる
+const YABU = { btn: { n: 'ボタンポロリ' }, hot: { n: 'ホツレン' }, suso: { n: 'スソダレ' } };   // ヤブレ族（YABU3D の 鍵）
+const ybKey = (nm) => Object.keys(YABU).find((k) => YABU[k].n === nm);
 const YOGO = { ase: { n: 'アセジミン', k: '汗の よごれ', ic: 'water_drop', d: '水に とける よごれ' }, abura: { n: 'アブラーン', k: '油の よごれ', ic: 'opacity', d: '水に とけにくい 油の よごれ' } };
 const IRON_RANK = { '低': 0, '中': 1, '高': 2 };
 // 取扱い表示の 記号（教科書 図10・p.197 図13。JIS L 0001）。生徒が 読む 教材の 記号なので、形を 描く
@@ -6168,7 +6302,7 @@ function c3Yabure() {
     { who: '町の子', t: '見習いさん！ シャツの ボタンが とれちゃった！ すその 端も ほつれて……' },
     { who: 'ボタンポロリ', t: 'ポロリ〜ン！ ボタン、とっちゃった〜' },
     { who: 'ホツレン', t: 'ホツレ〜ン！ 布の 端、ほどいちゃった〜' },
-    { html: '<div class="wstain" style="width:100%"><span class="material-symbols-outlined" aria-hidden="true">content_cut</span><span><b>ヤブレ族</b>は、洗っても 片づかない。<b>針と糸の わざ</b>で 直す</span></div>' },
+    { html: `<div class="wstain" style="width:100%">${['btn', 'hot'].map((k) => (PORTRAIT[`yb_${k}_yabure`] ? `<img class="ygimg" src="${PORTRAIT[`yb_${k}_yabure`]}" alt="${YABU[k].n}">` : '')).join('') || '<span class="material-symbols-outlined" aria-hidden="true">content_cut</span>'}<span><b>ヤブレ族</b>は、洗っても 片づかない。<b>針と糸の わざ</b>で 直す</span></div>` },
     ai({ meja: 'シュルルッ……洗っても 直らないね。はかって 縫う わざが いる！', pinko: 'チクッ！ ここは 針と 糸の 出番！ でも……', iro: 'シュー……。洗っても 直らない。縫って 直す わざが いるね。' }),
     { who: 'ツムギ', t: 'それは、針と糸の わざで 直すんだよ。ボタンつけ、かがり縫い……教室で 身につけて おいで。' },
     { who: 'me', t: 'わかった。わざを 身につけたら、きっと 直すね！' },
@@ -6242,6 +6376,7 @@ const SEW = [
   { id: 'side', who: '体操服袋の わき', ic: 'shopping_bag', what: 'わきの 縫い目が ほどけた。重い 物を 入れる 袋', need: '重くても やぶれないように、じょうぶに 縫い合わせたい', yb: 'ホツレン', ans: ['本返し縫い'], ok: ['半返し縫い'],
     hint: 'じょうぶに したい。ほころびの 少し 手前から、ひと針ずつ もどりながら 縫うと？', done: 'ほころびの 手前から 先まで 縫い直して、わきが しっかり ふさがった。重い 物を 入れても だいじょうぶ', okMsg: '半返し縫いでも、なみ縫いより じょうぶ。もっと じょうぶに するなら 本返し縫い' },
 ];
+const yabuChange = (k) => (k && PORTRAIT[`yb_${k}_yabure`] && PORTRAIT[`yb_${k}_naotta`] ? [{ html: `<div class="ygchg"><img src="${PORTRAIT[`yb_${k}_yabure`]}" alt="${YABU[k].n}（いたずら中）"><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span><img src="${PORTRAIT[`yb_${k}_naotta`]}" alt="${YABU[k].n}（直った）"></div>` }] : []);
 const YB_SAY = { 'ボタンポロリ': 'ポロリ〜ン……直されちゃった。また 取れたら 来るね〜', 'ホツレン': 'ホツレ〜ン……もう ほどけない。また 来るね〜', 'スソダレ': 'スソダレ〜……すそが ぴしっと しちゃった。また ね〜' };
 function c5Tsumugi() {
   const k = S.story.c5 || 'start';
@@ -6270,7 +6405,7 @@ function sewCard(it) {
   let pick = null, res = null;
   const draw = () => {
     openSheet(`<h2>直す：${fill(it.who)}</h2><p class="guide"><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>こまった ことと ねがいを 読んで、縫い方を 1つ えらび「この 縫い方で 直す」</span></p>
-      <div class="wtop"><div class="wstain"><span class="material-symbols-outlined" aria-hidden="true">${it.ic}</span><span><b>${fill(it.who)}</b><br>${it.what}<br><small>ヤブレ族：${it.yb}</small></span></div>
+      <div class="wtop"><div class="wstain">${PORTRAIT[`yb_${ybKey(it.yb)}_yabure`] ? `<img class="ygimg" src="${PORTRAIT[`yb_${ybKey(it.yb)}_yabure`]}" alt="${it.yb}">` : `<span class="material-symbols-outlined" aria-hidden="true">${it.ic}</span>`}<span><b>${fill(it.who)}</b><br>${it.what}<br><small>ヤブレ族：${it.yb}</small></span></div>
         <div class="wtag"><small>ねがい</small><br><b style="font-size:15px">${it.need}</b></div></div>
       <div class="stitches">${STITCH.map((x) => `<button data-n="${x.n}" class="${pick === x.n ? 'pick' : ''}"><b>${x.n}</b><small>${x.d}</small></button>`).join('')}</div>
       ${res === 'ng' ? `<div class="wres ng"><span class="material-symbols-outlined" aria-hidden="true">sentiment_dissatisfied</span><span>まだ ねがいに 合っていない。<br><small>手がかり：${gl(it.hint)}</small></span></div>` : ''}
@@ -6285,7 +6420,8 @@ function sewCard(it) {
         { scr: `${pick}で 直した。${it.done}` },
         ...(soft ? [ai({ meja: `シュルルッ……${it.okMsg}。`, pinko: `チクッ！ ${it.okMsg}！`, iro: `シュー……。${it.okMsg}。` })] : []),
         { html: '<div class="hintbox" style="width:100%"><b>実習の 手順を 思い出そう</b>：玉結び → 縫う → 玉どめ（くわしくは 教科書と 実習の プリント）</div>' },
-        { who: it.yb, t: YB_SAY[it.yb] },
+        ...yabuChange(ybKey(it.yb)),
+        { who: it.yb, t: YB_SAY[it.yb], pt: `yb_${ybKey(it.yb)}_naotta` },
       ], () => c5Sew(), 'つぎへ', true);
     };
     if (pick) $('#bSew').focus({ preventScroll: true }); else { const f = $('#sheet .stitches button'); if (f) f.focus({ preventScroll: true }); }
